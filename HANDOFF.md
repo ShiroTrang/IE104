@@ -2,7 +2,7 @@
 
 > **Read [`AGENTS.md`](AGENTS.md) first and follow it.** It holds the binding rules: pure HTML/CSS/JS, tokens, header/footer reuse, minimal animation, Vietnamese comments on every block, no em dash, back-end contract.
 
-Last update: 2026-11-14 · branch `feat/fe-forum` (from `feat/fe-reading`, which is from `feat/fe-auth-search`; fork `ShiroTrang/IE104`).
+Last update: 2026-11-14 · branch `feat/fe-support` (stacked: `feat/fe-auth-search` → `feat/fe-reading` → `feat/fe-forum` → `feat/fe-support`; fork `ShiroTrang/IE104`).
 
 ## 1. What is done (batch 1)
 
@@ -21,6 +21,7 @@ Last update: 2026-11-14 · branch `feat/fe-forum` (from `feat/fe-reading`, which
 | **Home (Trang chủ), implementation done**: hero, featured placeholders/pagination, recommendations, real latest/question feed, tabs, bookmark/follow, opt-in header search | `frontend/pages/index.html` + `index.js`, `styles/pages/home.css`, `components/featured-card/`, feed export in `components/postcard/`, capability-gated API services | Home 4 `140:135`, Navbar `140:200`, PostCard `139:157` |
 | **Reading page (Đọc bài), batch 2**: author row with flag, translate button, paragraphs + quote blocks, like/save/share pills, discussion (sort, replies, own-comment delete, per-comment translate, locked/muted states), sidebar (Về tác giả with real post/follower counts and follow, Địa điểm văn hoá, Bài viết liên quan, Chủ đề liên quan), petals, not-found state | `frontend/pages/post.html` + `post.js`, `styles/pages/post.css`, `services/api/comment.js`, additions in `posts.js`, `reactions.js`, `bookmarks.js`, `follows.js`, `capabilities.js`, `utils/errors.js`, assets `icons/flag-vn.svg`, `icons/flag-jp.svg`, `icons/external-link.svg`, `illustrations/culture-map.svg` | shared file Reading Page `1:1337` (personal `234:1679`) |
 | **Diễn đàn (forum), batch 2**: heading, 4 feed tabs (Mới nhất, Phổ biến, Đang theo dõi, Hỏi đáp), compose box (expands to title + topic chips, posts via `POST /posts` then `POST /posts/{id}/tags/{tag}`), shared feed PostCard, "Tải thêm bài viết" paging, `?compose=1` opens the compose box | `frontend/pages/forum.html` + `forum.js`, `styles/pages/forum.css`, `createPost`/`addPostTag`/`uploadAttachment`/`supportsPolls` in `services/api/posts.js`, flags `postAttachments`/`postPolls`, post error messages in `utils/errors.js`, icons `compose-camera.svg`, `compose-attachment.svg`, `compose-poll.svg` | shared file Diễn đàn `1:1587` (personal `236:1725`) |
+| **Hỗ trợ (support), batch 2**: hero with sun, clouds, faint torii and petals; help search over the FAQ (accent-insensitive, `?q=`), popular query chips, 8 topic cards that filter the FAQ (`?topic=`), FAQ accordion (`<details>`), "Vẫn cần trợ giúp?" card (support request / report dialog, mailto), "Quy tắc cộng đồng" card | `frontend/pages/support.html` + `support.js` + `support-content.js` (static help copy), `styles/pages/support.css`, `services/api/support.js`, flags `supportTickets`/`contentReports`, `illustrations/torii-faint.svg` | shared file Hỗ trợ 2 `1:1966` (personal `247:2088`) |
 | Demo data script | `frontend/dev/seed-demo.sh` | – |
 | Figma reference renders | `design-ref/*.png` | – |
 
@@ -30,7 +31,6 @@ Frame IDs below are in the personal file. The shared team file (source of truth)
 
 | Page | Figma frame | Notes |
 |---|---|---|
-| Hỗ trợ | `243:1848` / `247:2088` | `/pages/support.html`; red icon set + StatusBadge in `242:1843`. |
 | Giới thiệu | `245:1956` | `/pages/about.html`; Flag set `256:2489`. |
 | Profile | board `226:1544` | `/pages/profile/index.html` (file exists, empty). Uses `GET /my`, `GET /users/{id}`, follows, bookmarks. |
 | Mod/Admin views | board `260:1891` | `/manage/*` endpoints; staff badge colour `--color-staff`. RBAC summary in AGENTS.md §8. |
@@ -147,6 +147,30 @@ Contract test (no dependencies): `node frontend/dev/tests/auth-foundation.mjs`.
     - The sun theme toggle is not built.
   - Home has the same square loading avatar bug in `createFeedPlaceholder()` in `pages/index.js`: the placeholder span is missing the `avatar` class. It is not changed on this branch.
   - Shared code touched, all additive: new functions in `services/api/posts.js`, two new flags in `capabilities.js`, new messages in `utils/errors.js`, and a forum token block in `tokens.css`. The petal rotation tokens of the reading page are reused. Header, footer, postcard, featured-card, tag-chip and search-bar are unchanged.
+- **Hỗ trợ (2026-11-14)**, checked against shared file frame `1:1966` with the AGENTS.md §7 procedure (signed out and signed in, 1920×1080 and 375×812):
+  - Measured in the browser, all within 1px of Figma:
+    - Hero: top 77px, 450px high; search box 760×60 at y 338; popular chips at y 416.
+    - Content: topic heading at y 600; topic cards 336×217 with a 32px gap; FAQ heading at y 1237; FAQ card at y 1336.
+    - Sidebar cards 427px and 287px high; contact rows 66px; "Gửi yêu cầu" button 50px; footer at y 2166.
+  - The page needs no API data. The help content is static copy in `pages/support-content.js` (8 topics, 19 questions, 4 rules), written by the team for features that exist today.
+  - Tested:
+    - Search: "dich" finds the translate questions, so it ignores accents. The URL keeps `?q=`, and opening such a link runs the search. "No results" offers "Tìm trong Diễn đàn" (`searchUrl({q})`) and "Gửi yêu cầu hỗ trợ".
+    - Popular chips search straight away. Topic cards filter the FAQ, mark the selected card and keep `?topic=`. "Đọc đầy đủ quy tắc" opens the Quy tắc & Báo cáo questions. "Xem câu hỏi phổ biến" goes back to the 6 default questions.
+    - Dialog:
+      - The support dialog pre-fills the signed-in user's email. The report dialog adds a required link field.
+      - Gửi is disabled until the required fields are filled.
+      - Until the back end exists, sending shows a notice and a pre-filled `mailto:contact@etsubi.vn` link. No request is sent.
+  - Intentional differences from Figma:
+    - **Topic cards:** they show the real number of questions on the page ("3 câu hỏi →") instead of invented article counts ("12 bài viết").
+    - **Copy that described features Etsubi does not have:**
+      - The FAQ "chế độ song ngữ (Đối chiếu)" became "Làm sao để dịch một bài viết?".
+      - The topic "Dịch tự động & Song ngữ" became "Dịch & Ngôn ngữ".
+      - The search placeholder and the popular chip now say "dịch bài viết".
+      - Topic descriptions no longer mention image attachments or setting a map location.
+    - **Not in the frame:** the support/report dialog (Figma has no design for it), the search result and filter status rows, and the empty state.
+    - **Not built:** the sun theme toggle.
+    - **Narrow screens:** clouds, torii and side petals are hidden at 960px and below.
+  - Shared code touched, all additive: `services/api/support.js`, two flags in `capabilities.js`, a support token block in `tokens.css`, and the new asset `illustrations/torii-faint.svg`. The hero reuses `sun.svg` and `cloud-1/2/3.svg` from the auth scene unchanged.
 - **Docker on Windows without editing `backend/`:** besides converting `entrypoint.sh` to LF, you can mount an LF copy over it with an extra compose file that has `services.backend.volumes: ["<path>/entrypoint.sh:/entrypoint.sh:ro"]` and run `docker compose -f docker-compose.yml -f <that file> --profile full up -d --build postgres backend`.
 
 ## 5. Yêu cầu cho backend (requests for the back-end dev)
@@ -176,5 +200,7 @@ The back end will be adjusted to the front end. Every agent adds a row here when
 | Diễn đàn compose: Ảnh, Tệp | `POST /uploads` (multipart `file`) + `attachments` on posts | upload returns `{ url, name, mime_type, size }`; `POST /posts` accepts `attachments: [{ type: "image" \| "file", url, name }]` and `GET /posts` returns them so cards can show the image; `uploadAttachment()` behind flag `postAttachments` (`client.js` must then send `FormData` as is) | cần làm |
 | Diễn đàn compose: Thăm dò | poll on posts | `POST /posts` accepts `poll: { question, options: [string], closes_at? }`; `GET /posts/{id}` returns the poll with per-option votes and the viewer's choice; `POST /posts/{id}/poll/votes { option_index }`; `supportsPolls()` behind flag `postPolls` | cần làm |
 | Diễn đàn feed paging | `GET /posts` | total count (same request as Search) so "Tải thêm bài viết" can hide exactly at the end instead of guessing from a short page | cần làm |
+| Hỗ trợ "Gửi yêu cầu hỗ trợ" | `POST /support/tickets` | body `{ topic, email, message }` (JWT optional, guests can send), returns `201 { id, status: "open", created_at }`; the team answers by email; `createSupportTicket()` behind flag `supportTickets` | cần làm |
+| Hỗ trợ "Báo cáo vi phạm" (later also a report button on posts/comments) | `POST /reports` (JWT) | body `{ target_url, reason, message }` (could become `target_type` + `target_id`), returns `201 { id, status: "pending" }`; listed for staff on the Mod/Admin page; `createReport()` behind flag `contentReports` | cần làm |
 | Search | socket transport | deferred by team, HTTP stays for now | hoãn |
 | Register | email verification | deferred by team | hoãn |
