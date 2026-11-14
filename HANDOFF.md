@@ -2,7 +2,7 @@
 
 > **Read [`AGENTS.md`](AGENTS.md) first and follow it.** It holds the binding rules: pure HTML/CSS/JS, tokens, header/footer reuse, minimal animation, Vietnamese comments on every block, no em dash, back-end contract.
 
-Last update: 2026-11-14 · branch `feat/fe-about` (stacked: `feat/fe-auth-search` → `feat/fe-reading` → `feat/fe-forum` → `feat/fe-support` → `feat/fe-about`; fork `ShiroTrang/IE104`).
+Last update: 2026-11-14 · branch `feat/fe-profile` (stacked: `feat/fe-auth-search` → `feat/fe-reading` → `feat/fe-forum` → `feat/fe-support` → `feat/fe-about` → `feat/fe-profile`; fork `ShiroTrang/IE104`).
 
 ## 1. What is done (batch 1)
 
@@ -23,6 +23,7 @@ Last update: 2026-11-14 · branch `feat/fe-about` (stacked: `feat/fe-auth-search
 | **Diễn đàn (forum), batch 2**: heading, 4 feed tabs (Mới nhất, Phổ biến, Đang theo dõi, Hỏi đáp), compose box (expands to title + topic chips, posts via `POST /posts` then `POST /posts/{id}/tags/{tag}`), shared feed PostCard, "Tải thêm bài viết" paging, `?compose=1` opens the compose box | `frontend/pages/forum.html` + `forum.js`, `styles/pages/forum.css`, `createPost`/`addPostTag`/`uploadAttachment`/`supportsPolls` in `services/api/posts.js`, flags `postAttachments`/`postPolls`, post error messages in `utils/errors.js`, icons `compose-camera.svg`, `compose-attachment.svg`, `compose-poll.svg` | shared file Diễn đàn `1:1587` (personal `236:1725`) |
 | **Hỗ trợ (support), batch 2**: hero with sun, clouds, faint torii and petals; help search over the FAQ (accent-insensitive, `?q=`), popular query chips, 8 topic cards that filter the FAQ (`?topic=`), FAQ accordion (`<details>`), "Vẫn cần trợ giúp?" card (support request / report dialog, mailto), "Quy tắc cộng đồng" card | `frontend/pages/support.html` + `support.js` + `support-content.js` (static help copy), `styles/pages/support.css`, `services/api/support.js`, flags `supportTickets`/`contentReports`, `illustrations/torii-faint.svg` | shared file Hỗ trợ 2 `1:1966` (personal `247:2088`) |
 | **Giới thiệu (about), batch 2**: photo banner, name story with the 越 + 日 = Etsubi equation, 4 feature cards linking to the forum or the matching help topic, "Công nghệ phía sau" card, 5 team member cards, CTA linking to the team repo and its docs | `frontend/pages/about.html` + `about.js`, `styles/pages/about.css`, `assets/images/about-hero.jpg` (Figma photo resized to 1920px, ~0.6 MB) | shared file Giới thiệu `1:1737` (personal `245:1956`) |
+| **Hồ sơ (profile), batch 2**: own profile (no `id`, needs login) or someone else's (`?id=`), `?tab=followers\|following`; profile card (avatar, camera badge to Register Advanced on your own profile, name, role chip, bio, institute/address/native, real follower counts, follow button on other profiles); "Kết nối" card with two tabs, name filter (match in red, empty and no-result states), user rows with Theo dõi / Theo dõi lại / Đang theo dõi (hover "Bỏ theo dõi") and a "Bạn" label on your own row | `frontend/pages/profile/index.html` + `index.js`, `styles/pages/profile.css`, `listFollowing`/`listMyFollowers`/`listMyFollowing` in `services/api/follows.js` | shared file Profile `1:3896` (desktop `1:3900`, mobile `1:4066`, states `1:4140`; personal board `226:1544`) |
 | Demo data script | `frontend/dev/seed-demo.sh` | – |
 | Figma reference renders | `design-ref/*.png` | – |
 
@@ -32,7 +33,6 @@ Frame IDs below are in the personal file. The shared team file (source of truth)
 
 | Page | Figma frame | Notes |
 |---|---|---|
-| Profile | board `226:1544` | `/pages/profile/index.html` (file exists, empty). Uses `GET /my`, `GET /users/{id}`, follows, bookmarks. |
 | Mod/Admin views | board `260:1891` | `/manage/*` endpoints; staff badge colour `--color-staff`. RBAC summary in AGENTS.md §8. |
 | i18n (VI/JA/EN) | – | Header language badge only stores `localStorage.etsubi_lang`; no dictionaries yet. |
 
@@ -185,6 +185,29 @@ Contract test (no dependencies): `node frontend/dev/tests/auth-foundation.mjs`.
     - **CTA links:** "Mã nguồn trên GitHub" opens `CNVN2024-2-Boiz/etsubi`. "Tài liệu dự án" opens its `docs/src` folder. Both open in a new tab.
     - **Narrow screens:** below 1280px the equation moves under the text and the CTA buttons wrap. Below 960px the petals are hidden. At 375px everything is one column.
   - The team member names, roles and student IDs come from the Figma frame. Confirm with the team that publishing the MSSV is fine before the site goes public.
+- **Hồ sơ (2026-11-14)**, checked against shared file frame `1:3896` with the AGENTS.md §7 procedure (signed in as Kenji on his own and on Minh Anh's profile, signed out, 1920×1080 and 375×812):
+  - Measured in the browser, matching Figma:
+    - Profile card: 960×256 at y 133. Cover 96px high. Avatar ring 112px at 40px from the card top. Camera badge 30px.
+    - "Kết nối" card at y 413. Tabs 32px high, filter 44px, rows 68px, row buttons 32px.
+    - Mobile: avatar ring 82px, full-width 36px follow button, two equal-width tabs.
+  - Fixed during the check:
+    - Japanese bios made the lines 1px taller than Figma. The Japanese text is now aligned to the top of the line.
+    - An unknown user id showed grey placeholder cards. The cards are now hidden and only the error stays.
+  - All data is real:
+    - Profile: `GET /my` for your own profile, `GET /users/{id}` for someone else's.
+    - Lists: `GET /my/followers`, `GET /my/following`, `GET /users/{id}/followers`, `GET /users/{id}/following`.
+    - Button states use one `GET /my/following` and one `GET /my/followers` for the viewer, with no request per row.
+    - Counts are the list lengths.
+  - Tested:
+    - Following back changes the row to "Đang theo dõi" and does not show "Bỏ theo dõi" until the mouse leaves the button. Unfollowing from your own "Đang theo dõi" tab removes the row and updates both counts. The follow button on another profile updates their follower count and list.
+    - The filter is case-insensitive, shows the match in red, has a clear button, and shows "Không tìm thấy" when nothing matches.
+    - Opening a profile without `id` while signed out goes to Login with `redirect`. An unknown `id` shows "Không tìm thấy người dùng này".
+  - Intentional differences from Figma:
+    - The header has Trang chủ active as in the frame, because Hồ sơ has no tab of its own.
+    - The camera badge links to Register Advanced, because Etsubi has no inline avatar editor or upload endpoint.
+    - On other people's profiles on desktop, the follow button sits at the right of the info row, because the desktop frame only shows your own profile.
+    - Empty-state copy for other people's profiles ("<tên> chưa theo dõi ai") and for your own followers list was written by the team, because Figma only draws "Bạn chưa theo dõi ai".
+  - Shared code touched, all additive: three new functions in `services/api/follows.js` and a profile token block in `tokens.css`.
 - **Docker on Windows without editing `backend/`:** besides converting `entrypoint.sh` to LF, you can mount an LF copy over it with an extra compose file that has `services.backend.volumes: ["<path>/entrypoint.sh:/entrypoint.sh:ro"]` and run `docker compose -f docker-compose.yml -f <that file> --profile full up -d --build postgres backend`.
 
 ## 5. Yêu cầu cho backend (requests for the back-end dev)
@@ -216,5 +239,7 @@ The back end will be adjusted to the front end. Every agent adds a row here when
 | Diễn đàn feed paging | `GET /posts` | total count (same request as Search) so "Tải thêm bài viết" can hide exactly at the end instead of guessing from a short page | cần làm |
 | Hỗ trợ "Gửi yêu cầu hỗ trợ" | `POST /support/tickets` | body `{ topic, email, message }` (JWT optional, guests can send), returns `201 { id, status: "open", created_at }`; the team answers by email; `createSupportTicket()` behind flag `supportTickets` | cần làm |
 | Hỗ trợ "Báo cáo vi phạm" (later also a report button on posts/comments) | `POST /reports` (JWT) | body `{ target_url, reason, message }` (could become `target_type` + `target_id`), returns `201 { id, status: "pending" }`; listed for staff on the Mod/Admin page; `createReport()` behind flag `contentReports` | cần làm |
+| Hồ sơ (privacy) | `GET /users/{id}` | the public profile returns `email` (and `language`, `muted_until`); remove them from the public response, so only `GET /my` returns them. The front end never shows them | cần làm |
+| Hồ sơ lists | `GET /users/{id}/followers`, `/following`, `/my/followers`, `/my/following` | pagination (`limit`, `offset`) and counts (`follower_count`, `following_count` on the user), so large lists do not load all at once; the page counts list lengths today | cần làm |
 | Search | socket transport | deferred by team, HTTP stays for now | hoãn |
 | Register | email verification | deferred by team | hoãn |
