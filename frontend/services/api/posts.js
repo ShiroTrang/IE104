@@ -71,6 +71,67 @@ export async function listFollowingFeed({ limit = 5, offset = 0, signal } = {}) 
   return request('/my/feed', { query: { limit, offset }, signal });
 }
 
+/**
+ * Lấy một bài viết cho trang đọc bài; API trả 404 khi bài bị ẩn, bị xoá hoặc không tồn tại.
+ * @param {string} postId Mã bài viết lấy từ tham số id trên URL.
+ * @returns {Promise<object>} PostResponse gồm tiêu đề, nội dung, ngôn ngữ, toạ độ và comments_locked.
+ */
+export function getPost(postId) {
+  return request('/posts/' + encodeURIComponent(postId));
+}
+
+/**
+ * Lấy toàn bộ bài đã đăng của một tác giả; trang đọc bài đếm số phần tử để hiện "Bài viết".
+ * @param {string} userId Mã tác giả.
+ * @returns {Promise<Array>} Danh sách PostResponse (API hiện không phân trang endpoint này).
+ */
+export function listUserPosts(userId) {
+  return request('/users/' + encodeURIComponent(userId) + '/posts');
+}
+
+/**
+ * Dịch bài sang ngôn ngữ giao diện của người đang đăng nhập (POST /posts/{id}/translate, cần JWT).
+ * @param {string} postId Mã bài viết.
+ * @returns {Promise<object>} { language, source_language, title, content, translated }.
+ */
+export function translatePost(postId) {
+  return request('/posts/' + encodeURIComponent(postId) + '/translate', { method: 'POST' });
+}
+
+// CẦN BACKEND: GET /posts/{id}/related?limit=3 trả bài liên quan đã xếp hạng, mỗi bài kèm comment_count và tags[{id,name}]. Chưa có thì trang tự tìm bài cùng tag đầu tiên bằng GET /posts?tags= (dữ liệu thật, chỉ thiếu số bình luận).
+/**
+ * Lấy tối đa 3 bài liên quan cho thẻ "Bài viết liên quan" của trang đọc bài.
+ * @param {object} post Bài đang đọc.
+ * @param {Array} postTags Thẻ thật của bài, dùng cho cách dự phòng khi backend chưa có endpoint.
+ * @returns {Promise<Array>} Mỗi phần tử có id, title, comment_count (null nếu chưa biết) và tag {id,name}.
+ */
+export async function getRelatedPosts(post, postTags = []) {
+  if (backendSupports.relatedPosts) {
+    const items = await request('/posts/' + encodeURIComponent(post.id) + '/related', { query: { limit: 3 } });
+    return (items || []).map(item => ({ ...item, tag: item.tag || item.tags?.[0] || null }));
+  }
+  const tag = postTags[0];
+  if (!tag) {
+    return [];
+  }
+  // Lấy 4 bài để còn đủ 3 bài sau khi bỏ chính bài đang đọc.
+  const posts = await searchPosts({ tagIds: [tag.id], limit: 4 });
+  return (posts || [])
+    .filter(item => item.id !== post.id)
+    .slice(0, 3)
+    .map(item => ({ ...item, comment_count: item.comment_count ?? null, tag }));
+}
+
+// CẦN BACKEND: GET /posts/{id} trả place: { name, address, opening_hours, phone } cho bài có toạ độ (latitude/longitude đã có sẵn).
+/**
+ * Đọc thông tin địa điểm văn hoá của bài; null nghĩa là chưa biết, trang hiện thanh xám.
+ * @param {object} post Bài đang đọc.
+ * @returns {object|null} Thông tin địa điểm hoặc null khi backend chưa hỗ trợ.
+ */
+export function getPostPlace(post) {
+  return backendSupports.postPlace && post?.place ? post.place : null;
+}
+
 // CẦN BACKEND: users có display_name riêng với username là @handle duy nhất; tác giả nhúng cũng cần display_name. Chưa có thì dùng username thật ở cả hai vị trí.
 /** Chọn tên hiển thị thật từ hồ sơ đã tải, không phát sinh yêu cầu hồ sơ bổ sung. */
 export function getAuthorDisplayName(author) {

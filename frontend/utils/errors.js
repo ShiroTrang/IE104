@@ -52,6 +52,25 @@ export function toVietnameseMessage(error) {
 }
 
 /**
+ * Diễn giải lỗi của nút "Dịch" ở trang đọc bài (POST /posts/{id}/translate và /comments/{id}/translate).
+ * @param {object} error Lỗi có status từ API.
+ * @returns {string} Thông báo tiếng Việt ngắn để hiện ngay cạnh nội dung.
+ */
+export function translationErrorMessage(error) {
+  // 503: máy chủ chưa cấu hình dịch vụ dịch; 504: dịch vụ dịch trả lời quá lâu.
+  if (error?.status === 503) {
+    return 'Dịch vụ dịch chưa sẵn sàng. Vui lòng thử lại sau.';
+  }
+  if (error?.status === 504) {
+    return 'Dịch quá lâu, vui lòng thử lại.';
+  }
+  if (error?.status === 400) {
+    return 'Nội dung quá dài để dịch.';
+  }
+  return toVietnameseMessage(error);
+}
+
+/**
  * Tìm trường cần sửa trên trang login hoặc register từ thông báo API.
  * @param {object} error Lỗi có message tiếng Anh.
  * @returns {string|null} Tên trường hoặc null để hiện lỗi chung của biểu mẫu.

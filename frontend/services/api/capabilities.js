@@ -9,4 +9,8 @@ export const backendSupports = {
   bookmarkState: false,
   autoTranslateFeed: false,
   userHandle: false,
+  // Trang đọc bài: bài liên quan, thông tin địa điểm và tác giả nhúng trong bình luận.
+  relatedPosts: false,
+  postPlace: false,
+  commentAuthors: false,
 };

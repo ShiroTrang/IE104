@@ -10,3 +10,22 @@ export function followUser(userId) {
 export function unfollowUser(userId) {
   return request('/users/' + encodeURIComponent(userId) + '/follow', { method: 'DELETE' });
 }
+
+/**
+ * Hỏi người đang đăng nhập đã theo dõi một thành viên chưa (dùng cho nút ở thẻ "Về tác giả").
+ * @param {string} userId Mã thành viên cần kiểm tra.
+ * @returns {Promise<boolean>} true nếu đang theo dõi.
+ */
+export async function isFollowing(userId) {
+  const result = await request('/my/following/' + encodeURIComponent(userId));
+  return Boolean(result?.following);
+}
+
+/**
+ * Lấy danh sách người theo dõi công khai; trang đọc bài đếm số phần tử để hiện "Người theo dõi".
+ * @param {string} userId Mã thành viên.
+ * @returns {Promise<Array>} Danh sách người theo dõi (API hiện không phân trang endpoint này).
+ */
+export function listFollowers(userId) {
+  return request('/users/' + encodeURIComponent(userId) + '/followers');
+}
