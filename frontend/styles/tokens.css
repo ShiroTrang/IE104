@@ -161,6 +161,43 @@
   --home-search-placeholder: rgba(255,255,255,.6);
 }
 
+/* Trang đọc bài (Figma Reading Page 1:1337): màu, kích thước và vị trí cánh hoa riêng. */
+:root {
+  /* Màu chữ thân bài, khối trích dẫn, nền bản đồ và bóng nhẹ của thẻ bên phải. */
+  --color-post-body: #37302C;
+  --color-post-quote-bg: #FDEEF0;
+  --color-post-quote-text: #5A282D;
+  --color-post-map-label: #FFFCF7;
+  --shadow-post-side: 0 4px 16px rgba(194,69,79,.08);
+  --shadow-map-button: 0 2px 6px rgba(0,0,0,.12);
+  /* Lưới hai cột 997 + 40 + 403 = 1440px và đệm khung bài viết đo trong Figma. */
+  --post-sidebar-width: 403px;
+  --post-sidebar-laptop: 320px;
+  --post-columns-gap: 40px;
+  --post-card-border: 1.2px;
+  --post-card-padding-top: 44px;
+  --post-card-padding-x: 66px;
+  --post-card-padding-bottom: 48px;
+  --post-flow-gap: 24px;
+  --post-side-gap: 20px;
+  --post-side-padding: 22px;
+  --post-avatar-size: 56px;
+  --post-comment-avatar: 40px;
+  --post-map-height: 182px;
+  --post-map-radius: 8px;
+  /* Mười cánh hoa: vị trí so với tâm trang (ngang) và đỉnh vùng nội dung (dọc), góc xoay tĩnh. */
+  --post-petal-1-x: -810px;  --post-petal-1-y: 183px;  --post-petal-1-rotate: 0deg;
+  --post-petal-2-x: -844.8px; --post-petal-2-y: 442.1px; --post-petal-2-rotate: -74deg;
+  --post-petal-3-x: -756.1px; --post-petal-3-y: 824.8px; --post-petal-3-rotate: -32deg;
+  --post-petal-4-x: 806.3px;  --post-petal-4-y: 225.4px; --post-petal-4-rotate: -42deg;
+  --post-petal-5-x: 865.7px;  --post-petal-5-y: 563.4px; --post-petal-5-rotate: -64deg;
+  --post-petal-6-x: -826.8px; --post-petal-6-y: 1165px;  --post-petal-6-rotate: -10deg;
+  --post-petal-7-x: -761.3px; --post-petal-7-y: 1484.7px; --post-petal-7-rotate: -57deg;
+  --post-petal-8-x: 816.5px;  --post-petal-8-y: 1006.4px; --post-petal-8-rotate: -25deg;
+  --post-petal-9-x: 776.1px;  --post-petal-9-y: 1340.3px; --post-petal-9-rotate: -81deg;
+  --post-petal-10-x: 886.9px; --post-petal-10-y: 1623.1px; --post-petal-10-rotate: -67deg;
+}
+
 /* Khai báo các giá trị dùng chung để mọi trang có cùng thiết kế. */
 :root {
   /* Màu thương hiệu, nền, chữ, viền và trạng thái dùng cho nút, trường nhập và thông báo. */
