@@ -29,3 +29,28 @@ export async function isFollowing(userId) {
 export function listFollowers(userId) {
   return request('/users/' + encodeURIComponent(userId) + '/followers');
 }
+
+/**
+ * Lấy danh sách người mà một thành viên đang theo dõi (tab "Đang theo dõi" ở trang Hồ sơ).
+ * @param {string} userId Mã thành viên.
+ * @returns {Promise<Array>} Mỗi phần tử { id, username, avatar_url, bio }.
+ */
+export function listFollowing(userId) {
+  return request('/users/' + encodeURIComponent(userId) + '/following');
+}
+
+/**
+ * Người đang theo dõi chính mình (cần JWT); trang Hồ sơ dùng để biết ai cần nút "Theo dõi lại".
+ * @returns {Promise<Array>} Mỗi phần tử { id, username, avatar_url, bio }.
+ */
+export function listMyFollowers() {
+  return request('/my/followers');
+}
+
+/**
+ * Người mình đang theo dõi (cần JWT); dùng để vẽ đúng trạng thái nút ở mọi dòng chỉ bằng một yêu cầu.
+ * @returns {Promise<Array>} Mỗi phần tử { id, username, avatar_url, bio }.
+ */
+export function listMyFollowing() {
+  return request('/my/following');
+}
