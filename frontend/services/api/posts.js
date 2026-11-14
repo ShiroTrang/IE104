@@ -132,6 +132,50 @@ export function getPostPlace(post) {
   return backendSupports.postPlace && post?.place ? post.place : null;
 }
 
+/**
+ * Đăng bài mới từ ô viết bài của Diễn đàn (cần JWT); backend tự nhận diện ngôn ngữ.
+ * @param {object} draft { title, content } người dùng nhập.
+ * @returns {Promise<object>} PostResponse của bài vừa tạo (201).
+ */
+export function createPost({ title, content }) {
+  return request('/posts', { method: 'POST', body: { title, content } });
+}
+
+/**
+ * Gắn một tag vào bài của chính mình ngay sau khi đăng (API trả 204).
+ * @param {string} postId Mã bài viết.
+ * @param {string} tagId Mã tag lấy từ GET /tags.
+ * @returns {Promise<null>} Phản hồi rỗng khi thành công.
+ */
+export function addPostTag(postId, tagId) {
+  return request('/posts/' + encodeURIComponent(postId) + '/tags/' + encodeURIComponent(tagId), { method: 'POST' });
+}
+
+// CẦN BACKEND: POST /uploads (multipart, field "file") trả { url, name, mime_type, size }; POST /posts nhận thêm attachments: [{ type: "image" | "file", url, name }] và GET /posts trả lại mảng này để PostCard hiện ảnh.
+/**
+ * Tải ảnh hoặc tệp đính kèm cho bài viết; null nghĩa là backend chưa hỗ trợ và trang không gửi yêu cầu.
+ * @param {File} file Tệp người dùng chọn.
+ * @returns {Promise<object|null>} Thông tin tệp đã tải lên hoặc null.
+ */
+export async function uploadAttachment(file) {
+  if (!backendSupports.postAttachments) {
+    return null;
+  }
+  // Lưu ý khi bật cờ: request() hiện luôn gửi JSON, cần thêm nhánh gửi FormData nguyên dạng trong client.js.
+  const form = new FormData();
+  form.append('file', file);
+  return request('/uploads', { method: 'POST', body: form });
+}
+
+// CẦN BACKEND: POST /posts nhận thêm poll: { question, options: [string], closes_at? }; GET /posts/{id} trả poll kèm số phiếu từng lựa chọn và lựa chọn của người xem; POST /posts/{id}/poll/votes { option_index } để bỏ phiếu.
+/**
+ * Cho trang biết có tạo được thăm dò hay chưa, để không hiện biểu mẫu gửi đi một trường backend bỏ qua.
+ * @returns {boolean} true khi backend đã hỗ trợ thăm dò.
+ */
+export function supportsPolls() {
+  return backendSupports.postPolls;
+}
+
 // CẦN BACKEND: users có display_name riêng với username là @handle duy nhất; tác giả nhúng cũng cần display_name. Chưa có thì dùng username thật ở cả hai vị trí.
 /** Chọn tên hiển thị thật từ hồ sơ đã tải, không phát sinh yêu cầu hồ sơ bổ sung. */
 export function getAuthorDisplayName(author) {

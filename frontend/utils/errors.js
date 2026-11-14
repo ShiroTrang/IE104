@@ -34,6 +34,16 @@ export function toVietnameseMessage(error) {
   if (/password too weak|weak password|password.*(?:8|short)/i.test(message)) {
     return 'Mật khẩu cần ít nhất 8 ký tự.';
   }
+  // Lỗi khi đăng bài ở Diễn đàn (PostError của backend).
+  if (/title cannot be empty/i.test(message)) {
+    return 'Bài viết cần có tiêu đề.';
+  }
+  if (/title too long/i.test(message)) {
+    return 'Tiêu đề quá dài (tối đa 255 ký tự).';
+  }
+  if (/content too long/i.test(message)) {
+    return 'Nội dung quá dài.';
+  }
   if (/invalid language/i.test(message)) {
     return 'Ngôn ngữ không hợp lệ.';
   }

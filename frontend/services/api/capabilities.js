@@ -13,4 +13,7 @@ export const backendSupports = {
   relatedPosts: false,
   postPlace: false,
   commentAuthors: false,
+  // Diễn đàn: đính kèm ảnh/tệp và thăm dò trong ô viết bài.
+  postAttachments: false,
+  postPolls: false,
 };
