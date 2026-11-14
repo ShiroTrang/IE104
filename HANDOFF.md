@@ -2,7 +2,7 @@
 
 > **Read [`AGENTS.md`](AGENTS.md) first and follow it.** It holds the binding rules: pure HTML/CSS/JS, tokens, header/footer reuse, minimal animation, Vietnamese comments on every block, no em dash, back-end contract.
 
-Last update: 2026-11-14 · branch `feat/fe-reading` (from `feat/fe-auth-search`, fork `ShiroTrang/IE104`).
+Last update: 2026-11-14 · branch `feat/fe-forum` (from `feat/fe-reading`, which is from `feat/fe-auth-search`; fork `ShiroTrang/IE104`).
 
 ## 1. What is done (batch 1)
 
@@ -20,6 +20,7 @@ Last update: 2026-11-14 · branch `feat/fe-reading` (from `feat/fe-auth-search`,
 | **Search** (empty + results, tag chips, tag filter, mobile) | `frontend/pages/search.html` + `search.js`, `styles/pages/search.css`, `components/search-bar/`, `components/tag-chip/`, `components/postcard/` | `267:2576`, `168:1084`, `204:1448`, states `168:869` |
 | **Home (Trang chủ), implementation done**: hero, featured placeholders/pagination, recommendations, real latest/question feed, tabs, bookmark/follow, opt-in header search | `frontend/pages/index.html` + `index.js`, `styles/pages/home.css`, `components/featured-card/`, feed export in `components/postcard/`, capability-gated API services | Home 4 `140:135`, Navbar `140:200`, PostCard `139:157` |
 | **Reading page (Đọc bài), batch 2**: author row with flag, translate button, paragraphs + quote blocks, like/save/share pills, discussion (sort, replies, own-comment delete, per-comment translate, locked/muted states), sidebar (Về tác giả with real post/follower counts and follow, Địa điểm văn hoá, Bài viết liên quan, Chủ đề liên quan), petals, not-found state | `frontend/pages/post.html` + `post.js`, `styles/pages/post.css`, `services/api/comment.js`, additions in `posts.js`, `reactions.js`, `bookmarks.js`, `follows.js`, `capabilities.js`, `utils/errors.js`, assets `icons/flag-vn.svg`, `icons/flag-jp.svg`, `icons/external-link.svg`, `illustrations/culture-map.svg` | shared file Reading Page `1:1337` (personal `234:1679`) |
+| **Diễn đàn (forum), batch 2**: heading, 4 feed tabs (Mới nhất, Phổ biến, Đang theo dõi, Hỏi đáp), compose box (expands to title + topic chips, posts via `POST /posts` then `POST /posts/{id}/tags/{tag}`), shared feed PostCard, "Tải thêm bài viết" paging, `?compose=1` opens the compose box | `frontend/pages/forum.html` + `forum.js`, `styles/pages/forum.css`, `createPost`/`addPostTag`/`uploadAttachment`/`supportsPolls` in `services/api/posts.js`, flags `postAttachments`/`postPolls`, post error messages in `utils/errors.js`, icons `compose-camera.svg`, `compose-attachment.svg`, `compose-poll.svg` | shared file Diễn đàn `1:1587` (personal `236:1725`) |
 | Demo data script | `frontend/dev/seed-demo.sh` | – |
 | Figma reference renders | `design-ref/*.png` | – |
 
@@ -29,7 +30,6 @@ Frame IDs below are in the personal file. The shared team file (source of truth)
 
 | Page | Figma frame | Notes |
 |---|---|---|
-| Diễn đàn (forum) | `236:1725` | `/pages/forum.html`; "Viết bài" goes to `routes.newPost` (`/pages/forum.html?compose=1`). |
 | Hỗ trợ | `243:1848` / `247:2088` | `/pages/support.html`; red icon set + StatusBadge in `242:1843`. |
 | Giới thiệu | `245:1956` | `/pages/about.html`; Flag set `256:2489`. |
 | Profile | board `226:1544` | `/pages/profile/index.html` (file exists, empty). Uses `GET /my`, `GET /users/{id}`, follows, bookmarks. |
@@ -126,6 +126,27 @@ Contract test (no dependencies): `node frontend/dev/tests/auth-foundation.mjs`.
     - `POST /posts/{id}/translate` returns 503 when no translation provider is configured. The page shows "Dịch vụ dịch chưa sẵn sàng".
     - Comments are stored with the author's UI language, so translating returns `translated: false` and the page says the comment is already in the viewer's language.
   - Shared code touched, all additive: new exported functions in the services listed in §1, three new flags in `capabilities.js` (`relatedPosts`, `postPlace`, `commentAuthors`), `translationErrorMessage()` in `utils/errors.js`, and a new reading-page token block in `tokens.css`. Header, footer, postcard, featured-card, tag-chip and search-bar are unchanged.
+- **Diễn đàn (2026-11-14)**, checked against shared file frame `1:1587` with the AGENTS.md §7 procedure (signed out, signed in as Kenji, 1920×1080 and 375×812):
+  - Measured in the browser: heading top 125px and 71px high, tabs top 216px and 38px high, compose box top 274px and 155px high (divider 83px from its top, action row 40px), first card top 449px, 20px between cards. These match Figma.
+  - The feed cards are the shared `createFeedPostCard` from Home, so the Home review of the card applies. Comment and share counts show "–" until `GET /posts` returns them. The like count is the total of the reaction summary.
+  - Tested:
+    - Tabs: Phổ biến shows "sẽ có khi máy chủ hỗ trợ". Đang theo dõi asks signed-out users to sign in, and tells signed-in users it is not supported yet. Hỏi đáp only lists posts tagged `question`.
+    - Compose box: clicking it while signed out goes to Login with `redirect=/pages/forum.html?compose=1`. Signed in, it expands. Đăng stays disabled until both title and content are filled. Posting with a topic puts the new post at the top of Mới nhất with a "Xem bài" link. Huỷ clears the draft.
+    - Ảnh, Tệp and Thăm dò show a "sẽ có khi máy chủ hỗ trợ" message and send no request.
+    - Bookmarking from a card works. "Tải thêm bài viết" appends the 11th post and then hides itself.
+  - Fixed during the check:
+    - The Huỷ button and the "Tải thêm" row ignored `hidden`.
+    - The loading card had a square avatar.
+    - `?compose=1` did not expand the box when the browser window was not focused.
+    - The signed-out placeholder wrapped onto two lines on mobile.
+  - Intentional differences from Figma:
+    - The compose box expands to add a required **Tiêu đề** field and topic chips, because `POST /posts` requires a title and posts are tagged after creation. Figma only shows the collapsed box.
+    - Huỷ appears only while the box is open.
+    - **"Tải thêm bài viết"** (10 posts per page) is not in the frame. It was added so older posts can still be reached. The Home "no Xem thêm" decision applies only to Home.
+    - A signed-out user sees a grey avatar and "Đăng nhập để chia sẻ…" instead of a name.
+    - The sun theme toggle is not built.
+  - Home has the same square loading avatar bug in `createFeedPlaceholder()` in `pages/index.js`: the placeholder span is missing the `avatar` class. It is not changed on this branch.
+  - Shared code touched, all additive: new functions in `services/api/posts.js`, two new flags in `capabilities.js`, new messages in `utils/errors.js`, and a forum token block in `tokens.css`. The petal rotation tokens of the reading page are reused. Header, footer, postcard, featured-card, tag-chip and search-bar are unchanged.
 - **Docker on Windows without editing `backend/`:** besides converting `entrypoint.sh` to LF, you can mount an LF copy over it with an extra compose file that has `services.backend.volumes: ["<path>/entrypoint.sh:/entrypoint.sh:ro"]` and run `docker compose -f docker-compose.yml -f <that file> --profile full up -d --build postgres backend`.
 
 ## 5. Yêu cầu cho backend (requests for the back-end dev)
@@ -152,5 +173,8 @@ The back end will be adjusted to the front end. Every agent adds a row here when
 | Reading page comments | `GET /posts/{id}/comments` | embed `author: { id, username, avatar_url, native }` in each comment, so the page does not call `GET /users/{id}` per commenter; read by `getEmbeddedAuthor()` behind flag `commentAuthors` | cần làm |
 | Reading page author card | `GET /users/{id}` | `post_count` and `follower_count`, so the page does not download the full post and follower lists just to count them | cần làm |
 | Reading page translate | comment language | store each comment's own language (detected or chosen) instead of the author's UI language, so `POST /comments/{id}/translate` can translate a Japanese comment for a Vietnamese reader | cần làm |
+| Diễn đàn compose: Ảnh, Tệp | `POST /uploads` (multipart `file`) + `attachments` on posts | upload returns `{ url, name, mime_type, size }`; `POST /posts` accepts `attachments: [{ type: "image" \| "file", url, name }]` and `GET /posts` returns them so cards can show the image; `uploadAttachment()` behind flag `postAttachments` (`client.js` must then send `FormData` as is) | cần làm |
+| Diễn đàn compose: Thăm dò | poll on posts | `POST /posts` accepts `poll: { question, options: [string], closes_at? }`; `GET /posts/{id}` returns the poll with per-option votes and the viewer's choice; `POST /posts/{id}/poll/votes { option_index }`; `supportsPolls()` behind flag `postPolls` | cần làm |
+| Diễn đàn feed paging | `GET /posts` | total count (same request as Search) so "Tải thêm bài viết" can hide exactly at the end instead of guessing from a short page | cần làm |
 | Search | socket transport | deferred by team, HTTP stays for now | hoãn |
 | Register | email verification | deferred by team | hoãn |
