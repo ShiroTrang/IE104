@@ -222,6 +222,40 @@
   --forum-petal-10-x: 766.9px; --forum-petal-10-y: 1563.1px;
 }
 
+/* Trang Hỗ trợ (Figma "Etsubi Hỗ trợ 2" 1:1966): hero hồng, ô tìm kiếm lớn, lưới chủ đề và FAQ. */
+:root {
+  /* Nền chuyển sắc hồng của hero và bóng của ô tìm kiếm, thẻ chủ đề. */
+  --gradient-support-hero: linear-gradient(193.19deg, #FDE8EE 14.645%, #FAD6E1 50%, #F5C0D0 85.355%);
+  --shadow-support-search: 0 8px 24px rgba(196,59,87,.18);
+  --shadow-support-card: 0 3px 6px rgba(194,69,79,.06);
+  --color-support-chip-bg: rgba(255,255,255,.65);
+  --color-support-faq-open: #FDF4F6;
+  --color-dialog-backdrop: rgba(31,26,23,.45);
+  /* Kích thước đo trong Figma: hero cao 450px, ô tìm kiếm 760 × 60, cột FAQ 960 + 40 + 440. */
+  --support-hero-height: 450px;
+  --support-search-width: 760px;
+  --support-search-height: 60px;
+  --support-section-gap: 72px;
+  --support-grid-gap: 32px;
+  --support-sidebar-width: 440px;
+  /* Tám cánh hoa trong hero: vị trí so với tâm trang (ngang) và đỉnh hero (dọc), góc xoay từ Figma. */
+  --support-hero-petal-1-x: 520px;    --support-hero-petal-1-y: 60px;    --support-hero-petal-1-rotate: 0deg;
+  --support-hero-petal-2-x: 607.9px;  --support-hero-petal-2-y: 159.3px; --support-hero-petal-2-rotate: -40deg;
+  --support-hero-petal-3-x: 684.7px;  --support-hero-petal-3-y: 74px;    --support-hero-petal-3-rotate: -80deg;
+  --support-hero-petal-4-x: 758.1px;  --support-hero-petal-4-y: 220.1px; --support-hero-petal-4-rotate: -120deg;
+  --support-hero-petal-5-x: 831.4px;  --support-hero-petal-5-y: 110.5px; --support-hero-petal-5-rotate: -160deg;
+  --support-hero-petal-6-x: -689.4px; --support-hero-petal-6-y: 49.2px;  --support-hero-petal-6-rotate: 160deg;
+  --support-hero-petal-7-x: -780px;   --support-hero-petal-7-y: 220px;   --support-hero-petal-7-rotate: 0deg;
+  --support-hero-petal-8-x: -576.8px; --support-hero-petal-8-y: 297.4px; --support-hero-petal-8-rotate: -10deg;
+  /* Sáu cánh hoa hai bên lề phần nội dung (dọc tính từ đỉnh phần nội dung dưới hero). */
+  --support-petal-1-x: -834.8px; --support-petal-1-y: 92.1px;  --support-petal-1-rotate: -74deg;
+  --support-petal-2-x: -776.1px; --support-petal-2-y: 574.8px; --support-petal-2-rotate: -32deg;
+  --support-petal-3-x: 835.7px;  --support-petal-3-y: 173.4px; --support-petal-3-rotate: -64deg;
+  --support-petal-4-x: -801.3px; --support-petal-4-y: 974.7px; --support-petal-4-rotate: -57deg;
+  --support-petal-5-x: 806.5px;  --support-petal-5-y: 726.4px; --support-petal-5-rotate: -25deg;
+  --support-petal-6-x: 866.1px;  --support-petal-6-y: 1120.3px; --support-petal-6-rotate: -81deg;
+}
+
 /* Khai báo các giá trị dùng chung để mọi trang có cùng thiết kế. */
 :root {
   /* Màu thương hiệu, nền, chữ, viền và trạng thái dùng cho nút, trường nhập và thông báo. */
