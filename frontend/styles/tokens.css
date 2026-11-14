@@ -285,6 +285,22 @@
   --about-petal-7-x: 743.2px;  --about-petal-7-y: 1785px;   --about-petal-7-rotate: -10deg;
 }
 
+/* Trang Hồ sơ (Figma "Profile - Màn hình áp dụng" 1:3896): cột 960px, thẻ hồ sơ và thẻ Kết nối. */
+:root {
+  /* Cột nội dung 960px, cách header 56px, cách footer 80px, hai thẻ cách nhau 24px. */
+  --profile-page-width: 960px;
+  --profile-page-top: 56px;
+  --profile-page-bottom: 80px;
+  /* Dải đỏ đầu thẻ hồ sơ cao 96px (64px trên điện thoại), avatar lớn 104px trong vòng kem 112px. */
+  --profile-cover-height: 96px;
+  --profile-cover-mobile: 64px;
+  --profile-avatar-size: 104px;
+  --profile-ring-size: 112px;
+  --shadow-profile-ring: 0 6px 8px rgba(194,69,79,.25);
+  --shadow-profile-avatar-sm: 0 3px 3.5px rgba(194,69,79,.18);
+  --shadow-profile-search: 0 0 0 3px rgba(194,69,79,.12);
+}
+
 /* Khai báo các giá trị dùng chung để mọi trang có cùng thiết kế. */
 :root {
   /* Màu thương hiệu, nền, chữ, viền và trạng thái dùng cho nút, trường nhập và thông báo. */
