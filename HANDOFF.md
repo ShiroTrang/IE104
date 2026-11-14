@@ -2,7 +2,7 @@
 
 > **Read [`AGENTS.md`](AGENTS.md) first and follow it.** It holds the binding rules: pure HTML/CSS/JS, tokens, header/footer reuse, minimal animation, Vietnamese comments on every block, no em dash, back-end contract.
 
-Last update: 2026-11-14 · branch `feat/fe-support` (stacked: `feat/fe-auth-search` → `feat/fe-reading` → `feat/fe-forum` → `feat/fe-support`; fork `ShiroTrang/IE104`).
+Last update: 2026-11-14 · branch `feat/fe-about` (stacked: `feat/fe-auth-search` → `feat/fe-reading` → `feat/fe-forum` → `feat/fe-support` → `feat/fe-about`; fork `ShiroTrang/IE104`).
 
 ## 1. What is done (batch 1)
 
@@ -22,6 +22,7 @@ Last update: 2026-11-14 · branch `feat/fe-support` (stacked: `feat/fe-auth-sear
 | **Reading page (Đọc bài), batch 2**: author row with flag, translate button, paragraphs + quote blocks, like/save/share pills, discussion (sort, replies, own-comment delete, per-comment translate, locked/muted states), sidebar (Về tác giả with real post/follower counts and follow, Địa điểm văn hoá, Bài viết liên quan, Chủ đề liên quan), petals, not-found state | `frontend/pages/post.html` + `post.js`, `styles/pages/post.css`, `services/api/comment.js`, additions in `posts.js`, `reactions.js`, `bookmarks.js`, `follows.js`, `capabilities.js`, `utils/errors.js`, assets `icons/flag-vn.svg`, `icons/flag-jp.svg`, `icons/external-link.svg`, `illustrations/culture-map.svg` | shared file Reading Page `1:1337` (personal `234:1679`) |
 | **Diễn đàn (forum), batch 2**: heading, 4 feed tabs (Mới nhất, Phổ biến, Đang theo dõi, Hỏi đáp), compose box (expands to title + topic chips, posts via `POST /posts` then `POST /posts/{id}/tags/{tag}`), shared feed PostCard, "Tải thêm bài viết" paging, `?compose=1` opens the compose box | `frontend/pages/forum.html` + `forum.js`, `styles/pages/forum.css`, `createPost`/`addPostTag`/`uploadAttachment`/`supportsPolls` in `services/api/posts.js`, flags `postAttachments`/`postPolls`, post error messages in `utils/errors.js`, icons `compose-camera.svg`, `compose-attachment.svg`, `compose-poll.svg` | shared file Diễn đàn `1:1587` (personal `236:1725`) |
 | **Hỗ trợ (support), batch 2**: hero with sun, clouds, faint torii and petals; help search over the FAQ (accent-insensitive, `?q=`), popular query chips, 8 topic cards that filter the FAQ (`?topic=`), FAQ accordion (`<details>`), "Vẫn cần trợ giúp?" card (support request / report dialog, mailto), "Quy tắc cộng đồng" card | `frontend/pages/support.html` + `support.js` + `support-content.js` (static help copy), `styles/pages/support.css`, `services/api/support.js`, flags `supportTickets`/`contentReports`, `illustrations/torii-faint.svg` | shared file Hỗ trợ 2 `1:1966` (personal `247:2088`) |
+| **Giới thiệu (about), batch 2**: photo banner, name story with the 越 + 日 = Etsubi equation, 4 feature cards linking to the forum or the matching help topic, "Công nghệ phía sau" card, 5 team member cards, CTA linking to the team repo and its docs | `frontend/pages/about.html` + `about.js`, `styles/pages/about.css`, `assets/images/about-hero.jpg` (Figma photo resized to 1920px, ~0.6 MB) | shared file Giới thiệu `1:1737` (personal `245:1956`) |
 | Demo data script | `frontend/dev/seed-demo.sh` | – |
 | Figma reference renders | `design-ref/*.png` | – |
 
@@ -31,7 +32,6 @@ Frame IDs below are in the personal file. The shared team file (source of truth)
 
 | Page | Figma frame | Notes |
 |---|---|---|
-| Giới thiệu | `245:1956` | `/pages/about.html`; Flag set `256:2489`. |
 | Profile | board `226:1544` | `/pages/profile/index.html` (file exists, empty). Uses `GET /my`, `GET /users/{id}`, follows, bookmarks. |
 | Mod/Admin views | board `260:1891` | `/manage/*` endpoints; staff badge colour `--color-staff`. RBAC summary in AGENTS.md §8. |
 | i18n (VI/JA/EN) | – | Header language badge only stores `localStorage.etsubi_lang`; no dictionaries yet. |
@@ -171,6 +171,20 @@ Contract test (no dependencies): `node frontend/dev/tests/auth-foundation.mjs`.
     - **Not built:** the sun theme toggle.
     - **Narrow screens:** clouds, torii and side petals are hidden at 960px and below.
   - Shared code touched, all additive: `services/api/support.js`, two flags in `capabilities.js`, a support token block in `tokens.css`, and the new asset `illustrations/torii-faint.svg`. The hero reuses `sun.svg` and `cloud-1/2/3.svg` from the auth scene unchanged.
+- **Giới thiệu (2026-11-14)**, checked against shared file frame `1:1737` with the AGENTS.md §7 procedure (signed out and signed in, 1920×1080 and 375×812):
+  - Measured in the browser, all within 1px of Figma:
+    - Banner: top 77px, 440px high.
+    - Name story: top 597px; equation 708×220 with 180×208 glyph cards and a 220px result circle.
+    - Feature cards 336×238. Tech card 202px high with 95px columns.
+    - Member cards 268×229, avatar ring 18px from the card top.
+    - CTA: 161px high; buttons 253×48 and 186×50.
+    - Footer at y 2373.
+  - The page is static. It needs no API data, and the header is the only part that changes when signed in.
+  - Intentional differences from Figma:
+    - **Feature card copy:** Etsubi has no side-by-side translation mode. "Dịch song ngữ tự động / Thử chế độ song ngữ" became "Dịch bài viết tự động / Xem cách dịch bài", linking to the Hỗ trợ translate topic. The Địa điểm card links to the Hỗ trợ places topic ("Xem hướng dẫn") instead of an example post, and its text says what the reading page really shows. "Quy tắc cộng đồng" opens the Hỗ trợ rules topic.
+    - **CTA links:** "Mã nguồn trên GitHub" opens `CNVN2024-2-Boiz/etsubi`. "Tài liệu dự án" opens its `docs/src` folder. Both open in a new tab.
+    - **Narrow screens:** below 1280px the equation moves under the text and the CTA buttons wrap. Below 960px the petals are hidden. At 375px everything is one column.
+  - The team member names, roles and student IDs come from the Figma frame. Confirm with the team that publishing the MSSV is fine before the site goes public.
 - **Docker on Windows without editing `backend/`:** besides converting `entrypoint.sh` to LF, you can mount an LF copy over it with an extra compose file that has `services.backend.volumes: ["<path>/entrypoint.sh:/entrypoint.sh:ro"]` and run `docker compose -f docker-compose.yml -f <that file> --profile full up -d --build postgres backend`.
 
 ## 5. Yêu cầu cho backend (requests for the back-end dev)
