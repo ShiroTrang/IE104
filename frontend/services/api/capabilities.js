@@ -16,4 +16,7 @@ export const backendSupports = {
   // Diễn đàn: đính kèm ảnh/tệp và thăm dò trong ô viết bài.
   postAttachments: false,
   postPolls: false,
+  // Hỗ trợ: gửi yêu cầu hỗ trợ và báo cáo vi phạm từ trang Hỗ trợ.
+  supportTickets: false,
+  contentReports: false,
 };
