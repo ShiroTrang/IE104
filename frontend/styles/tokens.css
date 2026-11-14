@@ -256,6 +256,35 @@
   --support-petal-6-x: 866.1px;  --support-petal-6-y: 1120.3px; --support-petal-6-rotate: -81deg;
 }
 
+/* Trang Giới thiệu (Figma "Etsubi Giới thiệu" 1:1737): banner ảnh, phương trình tên gọi, tính năng, nhóm. */
+:root {
+  /* Kích thước đo trong Figma: banner cao 440px, các khu cách nhau 88px, đệm trên 80px và dưới 96px. */
+  --about-hero-height: 440px;
+  --about-hero-top: 93px;
+  --about-section-gap: 88px;
+  --about-main-top: 80px;
+  --about-main-bottom: 96px;
+  /* Bóng của vòng tròn kết quả "Etsubi" và vòng avatar thành viên. */
+  --shadow-about-result: 0 8px 24px rgba(194,69,79,.25);
+  --shadow-about-avatar-ring: 0 5px 7px rgba(194,69,79,.22);
+  --color-about-hero-text: rgba(255,255,255,.9);
+  --color-about-cta-text: rgba(255,255,255,.85);
+  /* Sáu cánh hoa trong banner (so với tâm trang và đỉnh banner) và bảy cánh bên lề (so với đỉnh phần nội dung). */
+  --about-hero-petal-1-x: 540px;    --about-hero-petal-1-y: 60px;    --about-hero-petal-1-rotate: 0deg;
+  --about-hero-petal-2-x: 607.9px;  --about-hero-petal-2-y: 146.3px; --about-hero-petal-2-rotate: -40deg;
+  --about-hero-petal-3-x: 664.7px;  --about-hero-petal-3-y: 238px;   --about-hero-petal-3-rotate: -80deg;
+  --about-hero-petal-4-x: 718.1px;  --about-hero-petal-4-y: 321.1px; --about-hero-petal-4-rotate: -120deg;
+  --about-hero-petal-5-x: 771.4px;  --about-hero-petal-5-y: 88.5px;  --about-hero-petal-5-rotate: -160deg;
+  --about-hero-petal-6-x: 810.6px;  --about-hero-petal-6-y: 174.2px; --about-hero-petal-6-rotate: 160deg;
+  --about-petal-1-x: -834.8px; --about-petal-1-y: 102.1px;  --about-petal-1-rotate: -74deg;
+  --about-petal-2-x: -786.1px; --about-petal-2-y: 684.8px;  --about-petal-2-rotate: -32deg;
+  --about-petal-3-x: 835.7px;  --about-petal-3-y: 243.4px;  --about-petal-3-rotate: -64deg;
+  --about-petal-4-x: -801.3px; --about-petal-4-y: 1184.7px; --about-petal-4-rotate: -57deg;
+  --about-petal-5-x: 806.5px;  --about-petal-5-y: 786.4px;  --about-petal-5-rotate: -25deg;
+  --about-petal-6-x: 866.1px;  --about-petal-6-y: 1380.3px; --about-petal-6-rotate: -81deg;
+  --about-petal-7-x: 743.2px;  --about-petal-7-y: 1785px;   --about-petal-7-rotate: -10deg;
+}
+
 /* Khai báo các giá trị dùng chung để mọi trang có cùng thiết kế. */
 :root {
   /* Màu thương hiệu, nền, chữ, viền và trạng thái dùng cho nút, trường nhập và thông báo. */
