@@ -24,21 +24,23 @@
 
 /* ===== Thẻ hồ sơ ===== */
 
-/* Thẻ: nền kem, viền đỏ 2px, bo 4px, bóng hồng nhẹ; làm mốc cho avatar nằm đè lên dải đỏ. */
+/* Thẻ: nền kem, viền đỏ 2px, bo 4px, bóng hồng nhẹ; làm mốc cho avatar nằm đè lên dải đỏ.
+   Không dùng overflow: hidden để menu Quản trị được phép thò ra dưới mép thẻ. */
 .profile-card {
   position: relative;
-  overflow: hidden;
   border: 2px solid var(--color-red);
   border-radius: var(--radius-sm);
   background: var(--color-cream);
   box-shadow: var(--shadow-post-side);
 }
 
-/* Dải đỏ cao 96px chứa cánh hoa và cổng torii mờ. */
+/* Dải đỏ cao 96px chứa cánh hoa và cổng torii mờ; tự bo 2 góc trên (4px trừ viền 2px)
+   vì thẻ cha không còn cắt phần tràn. */
 .profile-card__cover {
   position: relative;
   height: var(--profile-cover-height);
   overflow: hidden;
+  border-radius: calc(var(--radius-sm) - 2px) calc(var(--radius-sm) - 2px) 0 0;
   background: var(--color-red);
 }
 

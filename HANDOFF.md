@@ -67,7 +67,7 @@ Contract test (no dependencies): `node frontend/dev/tests/auth-foundation.mjs`.
 - **Search has no socket (deferred by the team).** The back-end dev has not implemented the socket yet, so it is skipped for now; the back end only has `GET /api/v1/posts?q=&tags=`. `services/api/posts.js#searchPosts` is the single transport point to swap later.
 - **Search data gaps:** the API returns no author name, tags, comment/like/view counts, or total. Cards fetch author and tags progressively (rate limit 4 req/s); counts are not shown; the result count is the number loaded ("10+" when another page may exist); sort is "Mới nhất" only (server order) plus a client-side "Cũ nhất".
 - **Login is by email only** (back end `LoginRequest { email, password }`); username login is not supported.
-- **Register "Họ và tên" is stored as `username`** (unique, ≥ 3 bytes). Native language is set to `vi` at register and chosen on Register Advanced.
+- **Register "Họ và tên" is stored as `username`** (unique, ≥ 3 bytes). Native language is set to `vi` at register and chosen on Register Advanced. Side effect, open for the Register Advanced owner: Register Advanced loads that `vi` from `GET /my`, so "Tiếng Việt" is already selected and step 3 "Ngôn ngữ mẹ đẻ" shows a green tick before the user picks anything. The saved value is real, so this works. If the team wants the user to choose on purpose, the page could leave the radios empty until the first save, or the back end could make `native` optional at register.
 - **No avatar upload endpoint:** Register Advanced stores a preset path or a small 256×256 JPEG data URL in `avatar_url`.
 - **No email verification (skipped for now by the team)** – the back end has none, so the 4th step "Xác thực email" of frame `126:2` is not built; the 3-step frame `159:524` is the implemented version.
 - **"Quên mật khẩu?"** has no back-end endpoint: shows an info message.
@@ -227,6 +227,7 @@ Contract test (no dependencies): `node frontend/dev/tests/auth-foundation.mjs`.
     - When a dialog opens, focus goes to its first field: the name input when banning, the 24h chip when muting, the current role when changing roles. With no field, it goes to Cancel. It never goes to ×, so Enter cannot close the dialog by accident.
     - The "Điều hành viên" role description wraps to two lines (card 93px instead of 77). Figma keeps it on one line and lets it overflow the card.
     - On phones the dialog buttons wrap to two lines (56px).
+  - **Fix after user testing:** the "Quản trị" menu on a profile was cut off at the bottom edge of the profile card, because `.profile-card` had `overflow: hidden`. The card no longer clips its content. The red cover rounds its own top corners instead.
 - **Docker on Windows without editing `backend/`:** besides converting `entrypoint.sh` to LF, you can mount an LF copy over it with an extra compose file that has `services.backend.volumes: ["<path>/entrypoint.sh:/entrypoint.sh:ro"]` and run `docker compose -f docker-compose.yml -f <that file> --profile full up -d --build postgres backend`.
 
 ## 5. Yêu cầu cho backend (requests for the back-end dev)
