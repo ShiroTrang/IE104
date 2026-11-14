@@ -1,8 +1,13 @@
 /** Trang đọc bài (Figma Reading Page): tải bài, tác giả, thảo luận và sidebar từ API thật. */
 import { mountHeader } from '/components/header/header.js';
 import { mountFooter } from '/components/footer/footer.js';
-import { getPost, getPostTags, listUserPosts, translatePost, getRelatedPosts, getPostPlace } from '/services/api/posts.js';
-import { listComments, createComment, deleteComment, translateComment, getEmbeddedAuthor } from '/services/api/comment.js';
+import { getPost, getPostTags, listUserPosts, translatePost, getRelatedPosts, getPostPlace, updatePost, deletePost } from '/services/api/posts.js';
+import { listComments, createComment, deleteComment, translateComment, getEmbeddedAuthor, setCommentsLocked } from '/services/api/comment.js';
+import { setPostStatus, restorePost, getPostForStaff, listCommentsForStaff, setCommentStatus, restoreComment, setUserMute } from '/services/api/manage.js';
+import {
+  isStaff, canModerateUser, isMutedNow, formatUntil, formatUntilFull, createStaffTag, createStatusBadge, createStaffBox,
+  createStaffButton, createMenu, createMoreButton, modIcon, openConfirmDialog, openMuteDialog,
+} from '/components/moderation/moderation.js';
 import { getReactionSummary, getMyReaction, reactToPost, removeReaction } from '/services/api/reactions.js';
 import { bookmarkPost, unbookmarkPost, isPostBookmarked } from '/services/api/bookmarks.js';
 import { followUser, unfollowUser, isFollowing, listFollowers } from '/services/api/follows.js';
@@ -38,6 +43,8 @@ const state = {
   followerCount: null,
   translated: null,
   showTranslation: false,
+  // Thời điểm bài bị xoá trong phiên này (staff vẫn thấy bài và có nút Khôi phục).
+  deletedAt: null,
 };
 
 /* ===== Tiện ích hiển thị ===== */
@@ -153,15 +160,18 @@ function renderAuthorRow() {
   const info = el('div', { className: 'post-author__info' });
   if (author) {
     fillAvatar(avatar, author);
-    info.append(el('a', { className: 'post-author__name', href: routes.profile + '?id=' + encodeURIComponent(author.id) },
-      wrapJapanese(author.username), createFlag(author.native)));
+    info.append(el('div', { className: 'post-author__name-row' },
+      el('a', { className: 'post-author__name', href: routes.profile + '?id=' + encodeURIComponent(author.id) },
+        wrapJapanese(author.username), createFlag(author.native)),
+      // Nhãn "Đã ẩn" / "Đã xoá" chỉ staff thấy (người thường không mở được bài này).
+      state.deletedAt ? createStatusBadge('deleted') : post.status === 'hidden' ? createStatusBadge('hidden') : null));
   } else {
     avatar.classList.add('post-author__avatar--placeholder');
     info.append(placeholder('u-placeholder-bar--title post-author__bar'));
   }
   info.append(el('p', { className: 'post-author__meta' },
     formatDate(post.created_at) + ' · ' + readingMinutes(post.content) + ' phút đọc'));
-  row.replaceChildren(avatar, info);
+  row.replaceChildren(avatar, info, createPostMenu() || '');
 }
 
 /** Tách nội dung thành đoạn văn; đoạn mà mọi dòng bắt đầu bằng ">" thành khối trích dẫn. */
@@ -232,6 +242,262 @@ async function toggleTranslation() {
   // API báo translated=false khi bài đã ở đúng ngôn ngữ của người xem.
   status.textContent = state.translated.translated ? 'Đang xem bản dịch.' : 'Bài viết đã ở ngôn ngữ của bạn.';
   renderContent();
+}
+
+/* ===== Kiểm duyệt bài viết (Figma 1:2435, khu "Bài viết") ===== */
+
+/**
+ * Nút "···" ở hàng tác giả: staff có menu "Kiểm duyệt bài viết" (ẩn/hiện, khoá bình luận, xoá);
+ * tác giả có menu "Bài viết của bạn" (chỉnh sửa, khoá bình luận, xoá). Người khác không có nút.
+ */
+function createPostMenu() {
+  const { post, viewer } = state;
+  const staff = isStaff(viewer);
+  const isAuthor = Boolean(viewer && viewer.id === post.author_id);
+  if ((!staff && !isAuthor) || state.deletedAt) {
+    return null;
+  }
+  const items = [];
+  if (isAuthor) {
+    items.push({ icon: 'pencil', label: 'Chỉnh sửa bài viết', onSelect: startEdit });
+  }
+  if (staff) {
+    items.push(post.status === 'hidden'
+      ? { icon: 'eye', label: 'Hiện lại bài viết', onSelect: () => changePostStatus('published') }
+      : { icon: 'eyeOff', label: 'Ẩn bài viết', onSelect: () => changePostStatus('hidden') });
+  }
+  items.push(post.comments_locked
+    ? { icon: 'unlock', label: 'Mở khoá bình luận', onSelect: () => toggleCommentsLock(false) }
+    : { icon: 'lock', label: 'Khoá bình luận', onSelect: () => toggleCommentsLock(true) });
+  items.push('divider', { icon: 'trash', label: 'Xoá bài viết…', danger: true, onSelect: confirmDeletePost });
+  const header = staff ? { icon: 'shield', text: 'Kiểm duyệt bài viết' } : { text: 'Bài viết của bạn' };
+  const menu = createMenu(createMoreButton('Tuỳ chọn bài viết'), { header, items });
+  menu.classList.add('post-author__menu');
+  return menu;
+}
+
+/** Khối chỉ staff thấy ở đầu bài khi bài đang bị ẩn hoặc đã xoá; nội dung bài được làm mờ. */
+function renderPostModeration() {
+  const slot = qs('[data-post-staff]');
+  const hidden = state.post.status === 'hidden';
+  const deleted = Boolean(state.deletedAt);
+  qs('[data-article]').classList.toggle('is-faded', hidden || deleted);
+  slot.replaceChildren();
+  if (!isStaff(state.viewer)) {
+    return;
+  }
+  if (deleted) {
+    slot.append(createStaffBox(el('div', { className: 'staff-box__top post-staff-row' }, createStaffTag(),
+      el('span', { className: 'post-staff-row__text' }, 'Đã xoá lúc ' + formatUntilFull(state.deletedAt)),
+      createStaffButton('restore', 'Khôi phục', confirmRestorePost))));
+  } else if (hidden) {
+    slot.append(createStaffBox(el('div', { className: 'staff-box__top post-staff-row' }, createStaffTag(),
+      el('span', { className: 'post-staff-row__text' }, 'Bài viết đang bị ẩn khỏi mọi người.'),
+      createStaffButton('eye', 'Hiện lại', () => changePostStatus('published')))));
+  }
+}
+
+/** Vẽ lại các phần phụ thuộc trạng thái bài sau một thao tác quản trị. */
+function refreshPostState() {
+  renderAuthorRow();
+  renderPostModeration();
+  applyCommentPermissions();
+  renderComments();
+}
+
+/** Ẩn hoặc hiện lại bài (staff), qua hộp thoại xác nhận. */
+function changePostStatus(status) {
+  const hiding = status === 'hidden';
+  openConfirmDialog({
+    icon: hiding ? 'eyeOff' : 'eye',
+    title: hiding ? 'Ẩn bài viết này?' : 'Hiện lại bài viết này?',
+    subtitle: '“' + state.post.title + '” · ' + (state.author?.username || ''),
+    body: [el('p', { className: 'mod-dialog__text' }, hiding
+      ? 'Thành viên thường mở liên kết sẽ gặp trang không tìm thấy. Điều hành viên và Quản trị viên vẫn thấy bài và có thể hiện lại.'
+      : 'Bài viết sẽ hiện lại với mọi người như trước khi bị ẩn.')],
+    confirmLabel: hiding ? 'Ẩn bài viết' : 'Hiện lại',
+    confirmIcon: hiding ? 'eyeOff' : 'eye',
+    onConfirm: async () => {
+      state.post = { ...state.post, ...await setPostStatus(state.post.id, status) };
+      refreshPostState();
+    },
+  });
+}
+
+/** Khoá / mở khoá bình luận (tác giả hoặc staff). */
+function toggleCommentsLock(locked) {
+  openConfirmDialog({
+    icon: locked ? 'lock' : 'unlock',
+    title: locked ? 'Khoá bình luận?' : 'Mở khoá bình luận?',
+    subtitle: '“' + state.post.title + '”',
+    body: [el('p', { className: 'mod-dialog__text' }, locked
+      ? 'Ô viết bình luận được thay bằng thông báo; các bình luận cũ vẫn hiện.'
+      : 'Mọi người bình luận lại được trên bài viết này.')],
+    confirmLabel: locked ? 'Khoá bình luận' : 'Mở khoá',
+    confirmIcon: locked ? 'lock' : 'unlock',
+    onConfirm: async () => {
+      state.post = { ...state.post, ...await setCommentsLocked(state.post.id, locked) };
+      refreshPostState();
+    },
+  });
+}
+
+/** Xoá bài (xoá mềm): staff ở lại trang để khôi phục được; tác giả quay về Diễn đàn. */
+function confirmDeletePost() {
+  const staff = isStaff(state.viewer);
+  openConfirmDialog({
+    icon: 'trash',
+    title: 'Xoá bài viết này?',
+    subtitle: '“' + state.post.title + '” · ' + (state.author?.username || ''),
+    body: [el('p', { className: 'mod-dialog__text' }, 'Bài viết và toàn bộ bình luận sẽ không còn hiển thị với mọi người. Điều hành viên và Quản trị viên vẫn có thể khôi phục trong trang quản lý.')],
+    confirmLabel: 'Xoá bài viết',
+    confirmIcon: 'trash',
+    onConfirm: async () => {
+      await deletePost(state.post.id);
+      if (!staff) {
+        location.assign(routes.forum);
+        return;
+      }
+      state.deletedAt = new Date().toISOString();
+      refreshPostState();
+    },
+  });
+}
+
+/** Khôi phục bài đã xoá (staff). */
+function confirmRestorePost() {
+  openConfirmDialog({
+    icon: 'restore',
+    title: 'Khôi phục bài viết?',
+    subtitle: '“' + state.post.title + '”',
+    body: [el('p', { className: 'mod-dialog__text' }, 'Bài viết và bình luận hiện lại với mọi người như trước khi bị xoá.')],
+    confirmLabel: 'Khôi phục',
+    confirmIcon: 'restore',
+    onConfirm: async () => {
+      state.post = { ...state.post, ...await restorePost(state.post.id) };
+      state.deletedAt = null;
+      refreshPostState();
+    },
+  });
+}
+
+/** Chỉnh sửa bài ngay trên trang (tác giả): ô tiêu đề và nội dung thay cho bài, Lưu gửi PATCH /posts/{id}. */
+function startEdit() {
+  const article = qs('[data-article]');
+  if (qs('[data-edit-form]', article)) {
+    return;
+  }
+  const titleInput = el('input', { id: 'edit-title', className: 'input', type: 'text', maxlength: '255', value: state.post.title });
+  const contentInput = el('textarea', { id: 'edit-content', className: 'input post-edit__content', rows: '10' }, state.post.content || '');
+  const status = el('p', { className: 'field__hint', role: 'status' });
+  const save = el('button', { type: 'submit', className: 'btn btn--primary' }, 'Lưu thay đổi');
+  const cancel = el('button', { type: 'button', className: 'btn btn--secondary' }, 'Huỷ');
+  const form = el('form', { className: 'post-edit', 'data-edit-form': '', novalidate: true },
+    el('div', { className: 'field' }, el('label', { className: 'field__label', for: 'edit-title' }, 'Tiêu đề'), titleInput),
+    el('div', { className: 'field' }, el('label', { className: 'field__label', for: 'edit-content' }, 'Nội dung'), contentInput),
+    status, el('div', { className: 'post-edit__actions' }, cancel, save));
+  const parts = ['[data-title]', '.post-translate', '[data-body]'].map(selector => qs(selector, article));
+
+  /** Đóng biểu mẫu sửa và hiện lại bài. */
+  function close() {
+    form.remove();
+    parts.forEach(part => {
+      part.hidden = false;
+    });
+  }
+
+  /** Lưu: gửi tiêu đề, nội dung và toạ độ cũ; thành công thì vẽ lại bài. */
+  async function submit(event) {
+    event.preventDefault();
+    save.disabled = true;
+    save.textContent = 'Đang lưu…';
+    try {
+      const updated = await updatePost(state.post.id, {
+        title: titleInput.value.trim(), content: contentInput.value, latitude: state.post.latitude, longitude: state.post.longitude,
+      });
+      state.post = { ...state.post, ...updated };
+      state.translated = null;
+      state.showTranslation = false;
+      close();
+      renderContent();
+      qs('[data-breadcrumb-title]').replaceChildren(wrapJapanese(state.post.title));
+      document.title = state.post.title + ' · Etsubi';
+    } catch (error) {
+      status.textContent = toVietnameseMessage(error);
+      status.classList.add('field__hint--error');
+    } finally {
+      save.disabled = false;
+      save.textContent = 'Lưu thay đổi';
+    }
+  }
+
+  cancel.addEventListener('click', close);
+  form.addEventListener('submit', submit);
+  parts.forEach(part => {
+    part.hidden = true;
+  });
+  parts[0].before(form);
+  titleInput.focus();
+}
+
+/* ===== Kiểm duyệt bình luận ===== */
+
+/** Menu "···" của staff trên một bình luận: ẩn, xoá, tắt tiếng người viết (khoá nếu cùng cấp hoặc cao hơn). */
+function createCommentMenu(comment, author) {
+  const canMute = author && canModerateUser(state.viewer, author);
+  return createMenu(createMoreButton('Kiểm duyệt bình luận'), {
+    header: { icon: 'shield', text: 'Kiểm duyệt bình luận' },
+    items: [
+      { icon: 'eyeOff', label: 'Ẩn bình luận', onSelect: () => moderateComment(comment, 'hide') },
+      { icon: 'trash', label: 'Xoá bình luận…', danger: true, onSelect: () => moderateComment(comment, 'delete') },
+      'divider',
+      canMute
+        ? { icon: 'mute', label: 'Tắt tiếng người viết…', onSelect: () => muteAuthor(author) }
+        : { icon: 'mute', label: 'Tắt tiếng người viết…', sub: 'Không thể với người cùng cấp hoặc cao hơn', disabled: true },
+    ],
+  });
+}
+
+/** Ẩn, hiện lại, xoá hoặc khôi phục một bình luận (staff), luôn qua hộp thoại xác nhận. */
+function moderateComment(comment, action) {
+  const texts = {
+    hide: ['eyeOff', 'Ẩn bình luận này?', 'Thành viên thường không còn thấy bình luận. Staff vẫn thấy và có thể hiện lại.', 'Ẩn bình luận'],
+    show: ['eye', 'Hiện lại bình luận?', 'Bình luận hiện lại với mọi người.', 'Hiện lại'],
+    delete: ['trash', 'Xoá bình luận này?', 'Mọi người thấy dòng giữ chỗ "Bình luận này đã bị xoá". Staff vẫn khôi phục được.', 'Xoá bình luận'],
+    restore: ['restore', 'Khôi phục bình luận?', 'Bình luận hiện lại với mọi người như trước khi bị xoá.', 'Khôi phục'],
+  };
+  const [iconName, title, text, label] = texts[action];
+  const author = state.commentAuthors.get(comment.user_id);
+  openConfirmDialog({
+    icon: iconName,
+    title,
+    subtitle: (author ? author.username + ' · ' : '') + '“' + String(comment.content).slice(0, 60) + (comment.content.length > 60 ? '…' : '') + '”',
+    body: [el('p', { className: 'mod-dialog__text' }, text)],
+    confirmLabel: label,
+    confirmIcon: iconName,
+    onConfirm: async () => {
+      let updated;
+      if (action === 'hide' || action === 'show') {
+        updated = await setCommentStatus(comment.id, action === 'hide' ? 'hidden' : 'visible');
+      } else if (action === 'delete') {
+        await deleteComment(comment.id);
+        updated = { ...comment, is_deleted: true };
+      } else {
+        updated = await restoreComment(comment.id);
+      }
+      state.comments = state.comments.map(item => (item.id === comment.id ? { ...item, ...updated } : item));
+      renderComments();
+    },
+  });
+}
+
+/** Tắt tiếng người viết bình luận ngay từ menu bình luận. */
+function muteAuthor(author) {
+  openMuteDialog(author, async until => {
+    const updated = await setUserMute(author.id, until);
+    state.commentAuthors.set(author.id, { ...author, ...updated });
+    showActionStatus(author.username + ' bị tắt tiếng đến ' + formatUntil(updated.muted_until) + '.');
+  });
 }
 
 /* ===== Thích, lưu, chia sẻ ===== */
@@ -320,7 +586,8 @@ async function sharePost() {
 
 /** Cập nhật số bình luận thật trong tiêu đề "Thảo luận (n)" (không tính bình luận đã xoá). */
 function renderCommentCount() {
-  const visible = state.comments.filter(comment => !comment.is_deleted).length;
+  // Chỉ đếm bình luận mọi người thấy (không tính bình luận đã ẩn hoặc đã xoá mà staff vẫn thấy).
+  const visible = state.comments.filter(comment => !comment.is_deleted && comment.status !== 'hidden').length;
   qs('[data-comment-count]').textContent = visible;
 }
 
@@ -389,8 +656,9 @@ function createCommentNode(comment, replies = []) {
     author ? el('span', { className: 'post-comment__name' }, wrapJapanese(author.username))
       : placeholder('post-comment__name-bar'),
     el('time', { className: 'post-comment__time', datetime: comment.created_at }, formatCommentTime(comment.created_at)));
+  const staff = isStaff(state.viewer);
   const text = el('p', { className: 'post-comment__text' + (comment.is_deleted ? ' post-comment__text--deleted' : '') },
-    comment.is_deleted ? 'Bình luận đã bị xoá.' : wrapJapanese(comment.showTranslation ? comment.translation.content : comment.content));
+    comment.is_deleted ? 'Bình luận này đã bị xoá.' : wrapJapanese(comment.showTranslation ? comment.translation.content : comment.content));
   const note = el('p', { className: 'post-comment__note', role: 'status' });
   const tools = el('div', { className: 'post-comment__tools' });
   if (!comment.is_deleted) {
@@ -398,17 +666,42 @@ function createCommentNode(comment, replies = []) {
       comment.showTranslation ? 'Bản gốc' : 'Dịch');
     translateButton.addEventListener('click', () => toggleCommentTranslation(comment, translateButton, text, note));
     tools.append(translateButton);
-    // Chỉ người viết mới thấy nút xoá; backend vẫn kiểm tra quyền lần nữa.
-    if (state.viewer && state.viewer.id === comment.user_id) {
+    // Người viết (không phải staff) thấy nút xoá; staff dùng menu kiểm duyệt. Backend vẫn kiểm tra quyền.
+    if (state.viewer && state.viewer.id === comment.user_id && !staff) {
       const deleteButton = el('button', { type: 'button', className: 'post-comment__tool post-comment__tool--muted' }, 'Xoá');
       deleteButton.addEventListener('click', () => handleDelete(comment, deleteButton, note));
       tools.append(deleteButton);
     }
   }
-  const node = el('div', { className: 'post-comment' },
-    el('div', { className: 'post-comment__row' }, avatar,
-      el('div', { className: 'post-comment__content' },
-        el('div', { className: 'post-comment__head' }, who, tools), text, note)));
+  // Staff: menu "···" trên bình luận đang hiện; nút Hiện lại / Khôi phục cho bình luận đã ẩn / đã xoá.
+  if (staff && !comment.is_deleted && comment.status !== 'hidden') {
+    tools.append(createCommentMenu(comment, author));
+  }
+  const content = el('div', { className: 'post-comment__content' }, el('div', { className: 'post-comment__head' }, who, tools), text);
+  if (staff && comment.is_deleted) {
+    content.append(el('div', { className: 'post-comment__staff' }, createStaffTag(),
+      createStaffButton('restore', 'Khôi phục', () => moderateComment(comment, 'restore'))));
+  } else if (staff && comment.status === 'hidden') {
+    const links = el('div', { className: 'post-comment__tools' },
+      el('button', { type: 'button', className: 'post-comment__tool post-comment__tool--strong', 'data-action': 'show' }, 'Hiện lại'),
+      el('button', { type: 'button', className: 'post-comment__tool', 'data-action': 'delete' }, 'Xoá'));
+    // Hai nút chữ của bình luận đang ẩn: Hiện lại hoặc Xoá (đều qua hộp thoại xác nhận).
+    links.addEventListener('click', event => {
+      const action = event.target.closest('[data-action]')?.dataset.action;
+      if (action) {
+        moderateComment(comment, action);
+      }
+    });
+    content.append(links);
+  }
+  content.append(note);
+  let node = el('div', { className: 'post-comment' + (comment.status === 'hidden' ? ' post-comment--hidden' : '') },
+    el('div', { className: 'post-comment__row' }, avatar, content));
+  if (staff && comment.status === 'hidden' && !comment.is_deleted) {
+    // Bình luận đang ẩn nằm trong khối viền đứt chỉ staff thấy, kèm nhãn "Đã ẩn".
+    node = el('div', { className: 'post-comment' }, createStaffBox(
+      el('div', { className: 'staff-box__top' }, createStaffTag(), createStatusBadge('hidden')), node));
+  }
   if (replies.length) {
     node.append(el('div', { className: 'post-comment__replies' },
       replies.map(reply => createCommentNode(reply))));
@@ -461,7 +754,8 @@ async function loadCommentAuthors() {
 /** Tải danh sách bình luận thật của bài. */
 async function loadComments() {
   try {
-    state.comments = await listComments(state.post.id) || [];
+    // Staff thấy cả bình luận đang ẩn và đã xoá (để hiện lại hoặc khôi phục); người thường chỉ thấy bình luận đang hiện.
+    state.comments = await (isStaff(state.viewer) ? listCommentsForStaff(state.post.id) : listComments(state.post.id)) || [];
     renderComments();
     await loadCommentAuthors();
   } catch (error) {
@@ -517,16 +811,28 @@ async function submitComment(event) {
 function applyCommentPermissions() {
   const form = qs('[data-comment-form]');
   const notice = qs('[data-comment-notice]');
-  const mutedUntil = state.viewer?.mutedUntil ? new Date(state.viewer.mutedUntil) : null;
-  let message = '';
-  if (state.post.comments_locked) {
-    message = 'Bình luận của bài viết này đã bị khoá.';
-  } else if (mutedUntil && mutedUntil.getTime() > Date.now()) {
-    message = 'Tài khoản của bạn đang bị tạm khoá chức năng viết đến ' + mutedUntil.toLocaleString('vi-VN') + '.';
+  const locked = state.post.comments_locked;
+  const muted = isMutedNow(state.viewer?.mutedUntil);
+  // Nhãn "Đã khoá bình luận" cạnh tiêu đề Thảo luận (mọi người thấy).
+  qs('[data-locked-badge]').replaceChildren(locked ? createStatusBadge('locked') : '');
+  notice.hidden = !locked && !muted;
+  if (locked) {
+    // Khoá bình luận: thay ô nhập bằng thông báo xám có ổ khoá.
+    notice.className = 'post-notice post-notice--locked';
+    notice.replaceChildren(modIcon('lock', 16), el('span', {}, 'Bình luận đã bị khoá cho bài viết này.'));
+  } else if (muted) {
+    // Bị tắt tiếng: thông báo vàng, ô nhập vẫn hiện nhưng bị khoá như Figma.
+    notice.className = 'post-notice post-notice--muted';
+    notice.replaceChildren(modIcon('mute', 16), el('span', {}, 'Bạn đang bị tắt tiếng đến ' + formatUntil(state.viewer.mutedUntil) + ' nên chưa thể bình luận.'));
   }
-  form.hidden = Boolean(message);
-  notice.hidden = !message;
-  notice.textContent = message;
+  form.hidden = locked;
+  form.classList.toggle('is-disabled', muted);
+  qs('[data-comment-input]').disabled = muted;
+  qs('[data-comment-submit]').disabled = muted || !qs('[data-comment-input]').value.trim();
+  // Người bị tắt tiếng cũng không thả cảm xúc được (mọi thao tác ghi bị chặn).
+  if (state.viewer) {
+    qs('[data-like]').disabled = muted;
+  }
 }
 
 /* ===== Sidebar ===== */
@@ -725,12 +1031,17 @@ async function initialize() {
   try {
     state.post = await getPost(postId);
   } catch (error) {
-    if (error.status === 404 || error.status === 400) {
-      showNotFound('Bài viết có thể đã bị xoá, bị ẩn hoặc đường dẫn không đúng.');
+    // Bài bị ẩn hoặc đã xoá: staff đọc qua /manage nếu backend đã hỗ trợ (CẦN BACKEND, xem services/api/manage.js).
+    const viewer = error.status === 404 ? await fetchCurrentUser().catch(() => null) : null;
+    const staffPost = isStaff(viewer) ? await getPostForStaff(postId).catch(() => null) : null;
+    if (staffPost) {
+      state.post = staffPost;
+      state.deletedAt = staffPost.deleted_at || null;
     } else {
-      showNotFound(toVietnameseMessage(error));
+      showNotFound(error.status === 404 || error.status === 400
+        ? 'Bài viết có thể đã bị xoá, bị ẩn hoặc đường dẫn không đúng.' : toVietnameseMessage(error));
+      return;
     }
-    return;
   }
   const { post } = state;
   document.title = post.title + ' · Etsubi';
@@ -756,6 +1067,7 @@ async function initialize() {
   state.tags = tags || [];
   state.likeCount = Array.isArray(summary) ? summary.reduce((total, item) => total + (Number(item.count) || 0), 0) : null;
   renderAuthorRow();
+  renderPostModeration();
   renderLike();
   renderBookmark();
   renderSideAuthor();

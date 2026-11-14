@@ -755,3 +755,62 @@
     justify-content: center;
   }
 }
+
+/* ===== Góc nhìn Mod/Admin trên thẻ hồ sơ (Figma 1:2435) ===== */
+
+/* Hàng nút đầu hồ sơ: Theo dõi và Quản trị cách nhau 8px. */
+.profile-card__action {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* Ô chứa nhãn trạng thái cạnh tên; rỗng thì không chiếm chỗ. */
+.profile-card__status:empty {
+  display: none;
+}
+
+/* Khối chỉ staff thấy nằm dưới số theo dõi, cách trên thêm 6px; rỗng thì không chiếm chỗ. */
+.profile-card__staff {
+  margin-top: 6px;
+}
+
+/* Khối staff rỗng không chiếm chỗ. */
+.profile-card__staff:empty {
+  display: none;
+}
+
+/* Hồ sơ bị cấm: dải trên màu xám nâu, avatar xám, tên màu muted. */
+.profile-card.is-banned .profile-card__cover {
+  background: var(--color-banned-cover);
+}
+
+/* Avatar xám của hồ sơ bị cấm (bỏ ảnh thật cho thống nhất trạng thái). */
+.profile-card.is-banned .profile-card__avatar {
+  background: var(--color-banned-avatar);
+}
+
+/* Ảnh đại diện của tài khoản bị cấm hiển thị đen trắng. */
+.profile-card.is-banned .profile-card__avatar img {
+  filter: grayscale(1);
+}
+
+/* Tên của tài khoản bị cấm màu muted. */
+.profile-card.is-banned .profile-card__name {
+  color: var(--color-muted);
+}
+
+/* Mobile: hàng nút Theo dõi + Quản trị chia đều bề ngang. */
+@media (max-width: 600px) {
+  /* Hai nút chia đều. */
+  .profile-card__action > * {
+    flex: 1;
+  }
+
+  /* Nút Quản trị rộng hết phần của nó. */
+  .profile-card__action .staff-trigger, .profile-card__action .mod-menu-wrap {
+    justify-content: center;
+    width: 100%;
+  }
+}

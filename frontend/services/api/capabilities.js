@@ -19,4 +19,6 @@ export const backendSupports = {
   // Hỗ trợ: gửi yêu cầu hỗ trợ và báo cáo vi phạm từ trang Hỗ trợ.
   supportTickets: false,
   contentReports: false,
+  // Mod/Admin: đọc bài ở mọi trạng thái (ẩn, đã xoá) để mở lại trang đọc bài.
+  manageGetPost: false,
 };

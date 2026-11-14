@@ -301,6 +301,29 @@
   --shadow-profile-search: 0 0 0 3px rgba(194,69,79,.12);
 }
 
+/* Góc nhìn Mod/Admin (Figma 1:2435): nhãn trạng thái, khối chỉ staff thấy, menu và hộp thoại xác nhận. */
+:root {
+  /* Nhãn "Đang bị tắt tiếng": nền vàng nhạt, viền vàng, chữ nâu cam. */
+  --color-status-muted-bg: #FDF1DC;
+  --color-status-muted-border: #F3D19C;
+  --color-status-muted-text: #9A5B00;
+  /* Nhãn "Đã bị cấm" nền nâu đen; hồ sơ bị cấm có dải và avatar xám. */
+  --color-status-banned: #3D3532;
+  --color-banned-cover: #7A716B;
+  --color-banned-avatar: #9C928B;
+  /* Nhãn "Đã ẩn": nền xám be. */
+  --color-status-hidden-bg: #EDE7E3;
+  --color-status-hidden-border: #D9D0C7;
+  /* Khối chỉ staff thấy: nền xanh xám nhạt, viền đứt màu slate 55%. */
+  --color-staff-box-bg: #EEF1F6;
+  --color-staff-box-border: rgba(15,23,41,.55);
+  /* Mục menu bị khoá dùng chữ xám nhạt. */
+  --color-disabled-text: #B3A79F;
+  /* Bóng của menu thả xuống và hộp thoại. */
+  --shadow-menu: 0 10px 28px rgba(31,26,23,.16);
+  --shadow-dialog: 0 20px 48px rgba(0,0,0,.25);
+}
+
 /* Khai báo các giá trị dùng chung để mọi trang có cùng thiết kế. */
 :root {
   /* Màu thương hiệu, nền, chữ, viền và trạng thái dùng cho nút, trường nhập và thông báo. */

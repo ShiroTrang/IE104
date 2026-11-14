@@ -142,6 +142,25 @@ export function createPost({ title, content }) {
 }
 
 /**
+ * Sửa bài của chính mình (tiêu đề bắt buộc). Gửi lại toạ độ cũ vì backend coi thiếu toạ độ là xoá địa điểm.
+ * @param {string} postId Mã bài viết.
+ * @param {object} changes { title, content, latitude, longitude }.
+ * @returns {Promise<object>} Bài sau khi sửa.
+ */
+export function updatePost(postId, { title, content, latitude = null, longitude = null }) {
+  return request('/posts/' + encodeURIComponent(postId), { method: 'PATCH', body: { title, content, latitude, longitude } });
+}
+
+/**
+ * Xoá mềm bài viết (tác giả hoặc staff); staff có thể khôi phục.
+ * @param {string} postId Mã bài viết.
+ * @returns {Promise<null>} Phản hồi rỗng (204).
+ */
+export function deletePost(postId) {
+  return request('/posts/' + encodeURIComponent(postId), { method: 'DELETE' });
+}
+
+/**
  * Gắn một tag vào bài của chính mình ngay sau khi đăng (API trả 204).
  * @param {string} postId Mã bài viết.
  * @param {string} tagId Mã tag lấy từ GET /tags.

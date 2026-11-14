@@ -2,7 +2,7 @@
 
 > **Read [`AGENTS.md`](AGENTS.md) first and follow it.** It holds the binding rules: pure HTML/CSS/JS, tokens, header/footer reuse, minimal animation, Vietnamese comments on every block, no em dash, back-end contract.
 
-Last update: 2026-11-14 · branch `feat/fe-profile` (stacked: `feat/fe-auth-search` → `feat/fe-reading` → `feat/fe-forum` → `feat/fe-support` → `feat/fe-about` → `feat/fe-profile`; fork `ShiroTrang/IE104`).
+Last update: 2026-11-14 · branch `feat/fe-admin` (stacked, last two: `feat/fe-profile` → `feat/fe-admin`; full chain: `feat/fe-auth-search` → `feat/fe-reading` → `feat/fe-forum` → `feat/fe-support` → `feat/fe-about` → `feat/fe-profile`; fork `ShiroTrang/IE104`).
 
 ## 1. What is done (batch 1)
 
@@ -208,6 +208,16 @@ Contract test (no dependencies): `node frontend/dev/tests/auth-foundation.mjs`.
     - On other people's profiles on desktop, the follow button sits at the right of the info row, because the desktop frame only shows your own profile.
     - Empty-state copy for other people's profiles ("<tên> chưa theo dõi ai") and for your own followers list was written by the team, because Figma only draws "Bạn chưa theo dõi ai".
   - Shared code touched, all additive: three new functions in `services/api/follows.js` and a profile token block in `tokens.css`.
+- **Mod/Admin (2026-11-14, partly checked)**, shared file board `1:2435`. Added `components/moderation/` (status badges, the "Chỉ Mod/Admin thấy" tag, the dashed staff box, dropdown menu, confirm dialogs for mute, ban and role changes) and `services/api/manage.js`. Used on two pages:
+  - **Hồ sơ:** "Quản trị" button and menu (Tắt tiếng / Gia hạn / Gỡ tắt tiếng, Cấm / Gỡ cấm, Đổi vai trò only for Admin). The button is locked with a reason for users of the same or a higher role. Muted badge and staff box, and a grey profile when banned.
+  - **Đọc bài:**
+    - Staff post menu: hide or show, lock comments, delete and restore.
+    - Author menu: edit inline, lock comments, delete.
+    - Staff comment menu: hide or show, delete and restore, mute the writer.
+    - Notices: amber notice for muted users (input and like disabled), grey notice and "Đã khoá bình luận" badge for locked comments.
+  - **Checked in the browser** with test accounts `admin@demo.etsubi.vn` and `mod@demo.etsubi.vn` (same password as the seed). Their roles were set in the local DB with SQL. Every flow above was run against the real API. A public `GET /posts/{id}` returns 404 after a delete and 200 after a restore.
+  - **Not done yet:** pixel measurement against Figma, mobile 375 check, and screenshots of the dialogs and menus.
+  - **Intentional additions:** unmute and unban also go through a confirm dialog, because Figma says every admin action is confirmed. The post edit form is not designed in Figma.
 - **Docker on Windows without editing `backend/`:** besides converting `entrypoint.sh` to LF, you can mount an LF copy over it with an extra compose file that has `services.backend.volumes: ["<path>/entrypoint.sh:/entrypoint.sh:ro"]` and run `docker compose -f docker-compose.yml -f <that file> --profile full up -d --build postgres backend`.
 
 ## 5. Yêu cầu cho backend (requests for the back-end dev)
@@ -241,5 +251,6 @@ The back end will be adjusted to the front end. Every agent adds a row here when
 | Hỗ trợ "Báo cáo vi phạm" (later also a report button on posts/comments) | `POST /reports` (JWT) | body `{ target_url, reason, message }` (could become `target_type` + `target_id`), returns `201 { id, status: "pending" }`; listed for staff on the Mod/Admin page; `createReport()` behind flag `contentReports` | cần làm |
 | Hồ sơ (privacy) | `GET /users/{id}` | the public profile returns `email` (and `language`, `muted_until`); remove them from the public response, so only `GET /my` returns them. The front end never shows them | cần làm |
 | Hồ sơ lists | `GET /users/{id}/followers`, `/following`, `/my/followers`, `/my/following` | pagination (`limit`, `offset`) and counts (`follower_count`, `following_count` on the user), so large lists do not load all at once; the page counts list lengths today | cần làm |
+| Mod/Admin reading page | `GET /manage/posts/{id}` (staff) | return a post in any state (hidden, soft-deleted with `deleted_at`), so staff can reopen hidden or deleted posts; `getPostForStaff()` behind flag `manageGetPost` | cần làm |
 | Search | socket transport | deferred by team, HTTP stays for now | hoãn |
 | Register | email verification | deferred by team | hoãn |

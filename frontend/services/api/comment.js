@@ -43,6 +43,16 @@ export function translateComment(commentId) {
   return request('/comments/' + encodeURIComponent(commentId) + '/translate', { method: 'POST' });
 }
 
+/**
+ * Khoá hoặc mở khoá bình luận của một bài (tác giả với bài của mình, staff với mọi bài).
+ * @param {string} postId Mã bài viết.
+ * @param {boolean} locked true để khoá.
+ * @returns {Promise<object>} Bài sau khi cập nhật (có comments_locked).
+ */
+export function setCommentsLocked(postId, locked) {
+  return request('/posts/' + encodeURIComponent(postId) + '/comments/lock', { method: 'PATCH', body: { locked } });
+}
+
 // CẦN BACKEND: GET /posts/{id}/comments nhúng author { id, username, avatar_url, native } vào mỗi bình luận, để trang không phải gọi GET /users/{id} cho từng người.
 /**
  * Lấy tác giả đã nhúng trong bình luận nếu backend hỗ trợ; null thì trang tự tải hồ sơ.

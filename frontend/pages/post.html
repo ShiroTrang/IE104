@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/styles/main.css" />
     <link rel="stylesheet" href="/components/header/header.css" />
     <link rel="stylesheet" href="/components/footer/footer.css" />
+    <link rel="stylesheet" href="/components/moderation/moderation.css" />
     <link rel="stylesheet" href="/styles/pages/post.css" />
     <script type="module" src="/pages/post.js"></script>
   </head>
@@ -41,6 +42,9 @@
         <div class="post-columns">
           <!-- Cột trái: khung bài viết gồm tác giả, nội dung, thao tác và thảo luận. -->
           <article class="post-article" data-article aria-busy="true" aria-labelledby="post-title">
+            <!-- Khối chỉ Mod/Admin thấy khi bài đang bị ẩn hoặc đã xoá (Hiện lại / Khôi phục). -->
+            <div class="post-article__staff" data-post-staff></div>
+
             <!-- Tác giả và ngày đăng: avatar chữ đầu, tên, cờ theo tiếng mẹ đẻ, ngày và thời gian đọc. -->
             <div class="post-author" data-author>
               <span class="post-author__avatar post-author__avatar--placeholder" aria-hidden="true"></span>
@@ -97,7 +101,11 @@
             <!-- Thảo luận: tiêu đề có số bình luận thật, chọn thứ tự, danh sách và ô viết. -->
             <section class="post-discussion" aria-labelledby="discussion-title">
               <div class="post-discussion__head">
-                <h2 id="discussion-title" class="t-display post-discussion__title">Thảo luận (<span data-comment-count>–</span>)</h2>
+                <div class="post-discussion__title-row">
+                  <h2 id="discussion-title" class="t-display post-discussion__title">Thảo luận (<span data-comment-count>–</span>)</h2>
+                  <!-- Nhãn "Đã khoá bình luận" khi tác giả hoặc staff khoá bình luận. -->
+                  <span data-locked-badge></span>
+                </div>
                 <label class="post-discussion__sort">
                   <span class="u-visually-hidden">Thứ tự bình luận</span>
                   <select class="post-discussion__select" data-comment-sort>

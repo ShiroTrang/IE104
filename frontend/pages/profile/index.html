@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/styles/main.css" />
     <link rel="stylesheet" href="/components/header/header.css" />
     <link rel="stylesheet" href="/components/footer/footer.css" />
+    <link rel="stylesheet" href="/components/moderation/moderation.css" />
     <link rel="stylesheet" href="/styles/pages/profile.css" />
     <script type="module" src="/pages/profile/index.js"></script>
   </head>
@@ -46,6 +47,8 @@
                 <span class="u-visually-hidden">Đang tải hồ sơ…</span>
               </h1>
               <span class="profile-card__role" data-profile-role hidden></span>
+              <!-- Nhãn trạng thái: "Đã bị cấm" (mọi người) hoặc "Tắt tiếng đến…" (staff và chính người đó). -->
+              <span class="profile-card__status" data-profile-status></span>
             </div>
             <p class="profile-card__bio" data-profile-bio><span class="u-placeholder-bar" aria-hidden="true"></span></p>
             <ul class="profile-card__meta" data-profile-meta></ul>
@@ -54,8 +57,10 @@
               <span aria-hidden="true">·</span>
               <span><strong data-count="following">–</strong> đang theo dõi</span>
             </p>
+            <!-- Khối viền đứt chỉ Mod/Admin thấy: thời hạn tắt tiếng, gỡ cấm... -->
+            <div class="profile-card__staff" data-staff-slot></div>
           </div>
-          <!-- Hồ sơ người khác: nút Theo dõi / Theo dõi lại / Đang theo dõi (cỡ Md). -->
+          <!-- Hồ sơ người khác: nút Theo dõi / Theo dõi lại / Đang theo dõi (cỡ Md) và nút Quản trị (chỉ Mod/Admin). -->
           <div class="profile-card__action" data-profile-action></div>
         </div>
       </section>

@@ -1054,3 +1054,142 @@
     width: 100%;
   }
 }
+
+/* ===== Góc nhìn Mod/Admin và tác giả (Figma 1:2435, khu "Bài viết" và "Bình luận") ===== */
+
+/* Ô khối staff ở đầu bài; rỗng thì không chiếm chỗ (bài đang hiện bình thường). */
+.post-article__staff:empty {
+  display: none;
+}
+
+/* Hàng trong khối staff: nhãn, câu giải thích và nút Hiện lại / Khôi phục ở bên phải. */
+.post-staff-row {
+  width: 100%;
+}
+
+/* Câu giải thích chiếm phần còn lại để nút nằm sát mép phải. */
+.post-staff-row__text {
+  flex: 1;
+  min-width: 160px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+/* Bài bị ẩn / đã xoá (góc nhìn staff): tiêu đề, nội dung và thao tác mờ đi như Figma. */
+.post-article.is-faded .post-article__title, .post-article.is-faded .post-body, .post-article.is-faded .post-actions {
+  opacity: .5;
+}
+
+/* Hàng tác giả giữ nút "···" ở mép phải. */
+.post-author__menu {
+  align-self: flex-start;
+  margin-left: auto;
+}
+
+/* Tên tác giả và nhãn trạng thái (Đã ẩn / Đã xoá) cùng hàng, khe 8px. */
+.post-author__name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Các phần bài bị ẩn khi đang sửa: hidden phải thắng display:flex. */
+.post-translate[hidden], .post-body[hidden] {
+  display: none;
+}
+
+/* Biểu mẫu sửa bài: tiêu đề, nội dung và hai nút, khe 16px. */
+.post-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Ô nội dung cao vừa đủ, chỉ kéo giãn theo chiều dọc. */
+.post-edit__content {
+  height: auto;
+  min-height: 220px;
+  padding-block: var(--space-3);
+  line-height: 1.6;
+  resize: vertical;
+}
+
+/* Hai nút Huỷ và Lưu ở bên phải. */
+.post-edit__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+/* Tiêu đề Thảo luận và nhãn khoá cùng hàng, khe 12px. */
+.post-discussion__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Ô nhãn khoá rỗng không chiếm chỗ. */
+.post-discussion__title-row [data-locked-badge]:empty {
+  display: none;
+}
+
+/* Thông báo thay cho / cạnh ô viết bình luận: icon 16px và chữ 14px, đệm 12/16, bo 6px. */
+.post-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-100);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+/* Bị tắt tiếng: nền vàng nhạt, chữ nâu cam. */
+.post-notice--muted {
+  border-color: var(--color-status-muted-border);
+  background: var(--color-status-muted-bg);
+  color: var(--color-status-muted-text);
+}
+
+/* Icon trong thông báo không co lại. */
+.post-notice svg {
+  flex-shrink: 0;
+}
+
+/* Hidden phải thắng display:flex của thông báo. */
+.post-notice[hidden] {
+  display: none;
+}
+
+/* Ô viết bình luận bị khoá vì tắt tiếng: mờ đi, không nhận thao tác. */
+.post-comment-form.is-disabled {
+  opacity: .6;
+}
+
+/* Bình luận đang ẩn (góc nhìn staff): nội dung mờ trong khối viền đứt. */
+.post-comment--hidden .post-comment__row {
+  opacity: .6;
+}
+
+/* Hàng "Chỉ Mod/Admin thấy" + Khôi phục dưới bình luận đã xoá. */
+.post-comment__staff {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Nút chữ đậm màu chính (Hiện lại) cạnh nút Xoá đỏ của bình luận đang ẩn. */
+.post-comment__tool--strong {
+  color: var(--color-text);
+}
+
+/* Nút "···" của bình luận nhỏ hơn nút của bài viết. */
+.post-comment__tools .mod-more {
+  width: 28px;
+  height: 28px;
+}

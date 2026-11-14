@@ -12,6 +12,12 @@ import { initials } from '/utils/format.js';
 import { highlight, wrapJapanese } from '/utils/text.js';
 import { toVietnameseMessage } from '/utils/errors.js';
 import { routes } from '/utils/routes.js';
+import { setUserMute, setUserStatus, setUserRole } from '/services/api/manage.js';
+import {
+  isStaff, canModerateUser, isMutedNow, formatUntil, formatUntilFull, formatRemaining, ROLE_LABELS as MOD_ROLE_LABELS,
+  createStaffTag, createStatusBadge, createStaffBox, createStaffButton, createMenu, modIcon,
+  openConfirmDialog, openMuteDialog, openBanDialog, openRoleDialog,
+} from '/components/moderation/moderation.js';
 
 // Header theo frame Figma (tab Trang chủ đang chọn, ô tìm kiếm trong suốt); footer đầy đủ.
 mountHeader(qs('[data-component="header"]'), { active: 'home', searchForm: true });
@@ -184,7 +190,136 @@ function renderProfile() {
   qs('[data-profile-meta]').replaceChildren(...meta.map(([name, text]) => el('li', {}, icon(name, 14), el('span', {}, wrapJapanese(text)))));
   qs('[data-camera]').hidden = !isOwn;
   qs('[data-camera]').href = routes.registerAdvanced;
-  qs('[data-profile-action]').replaceChildren(isOwn ? '' : createFollowButton(profile, 'md'));
+  renderModeration();
+}
+
+/* ===== Góc nhìn Mod/Admin (Figma 1:2435, khu "Hồ sơ người dùng") ===== */
+
+/**
+ * Nhãn trạng thái, khối chỉ staff thấy và hàng nút (Theo dõi + Quản trị) theo vai trò người xem:
+ * - Ai cũng thấy hồ sơ bị cấm (xám, nhãn "Đã bị cấm", không có nút Theo dõi).
+ * - Nhãn tắt tiếng chỉ staff và chính người đó thấy; khối chi tiết và nút thao tác chỉ staff thấy.
+ */
+function renderModeration() {
+  const { profile, viewer, isOwn } = state;
+  const banned = profile.status === 'banned';
+  const muted = isMutedNow(profile.muted_until);
+  const staff = isStaff(viewer);
+  const canAct = canModerateUser(viewer, profile);
+  qs('[data-profile-card]').classList.toggle('is-banned', banned);
+
+  // Nhãn trạng thái cạnh tên.
+  const status = qs('[data-profile-status]');
+  status.replaceChildren();
+  if (banned) {
+    status.append(createStatusBadge('banned'));
+  } else if (muted && (staff || isOwn)) {
+    status.append(createStatusBadge('muted', 'Tắt tiếng đến ' + formatUntil(profile.muted_until)));
+  }
+
+  // Khối chỉ staff thấy, có nút gỡ / gia hạn khi người xem được tác động người này.
+  const box = qs('[data-staff-slot]');
+  box.replaceChildren();
+  if (staff && banned) {
+    box.append(createStaffBox(
+      el('div', { className: 'staff-box__top' }, createStaffTag()),
+      el('p', {}, 'Không đăng nhập vào khu vực cần tài khoản được; mọi thao tác ghi đều bị chặn.'),
+      canAct ? el('div', { className: 'staff-box__actions' }, createStaffButton('restore', 'Gỡ cấm', confirmUnban)) : null));
+  } else if (staff && muted) {
+    box.append(createStaffBox(
+      el('div', { className: 'staff-box__top' }, createStaffTag(), el('span', { className: 'staff-box__strong' }, formatRemaining(profile.muted_until))),
+      el('p', {}, 'Vẫn đọc được nội dung nhưng không thể đăng bài, bình luận hay thả cảm xúc cho đến ' + formatUntilFull(profile.muted_until) + '.'),
+      canAct ? el('div', { className: 'staff-box__actions' },
+        createStaffButton('mute', 'Gỡ tắt tiếng', confirmUnmute),
+        createStaffButton('clock', 'Gia hạn…', () => muteProfile(true), true)) : null));
+  }
+
+  // Hàng nút: Theo dõi (không có với hồ sơ bị cấm) và Quản trị (chỉ staff, không phải hồ sơ của mình).
+  const actions = [];
+  if (!isOwn && !banned) {
+    actions.push(createFollowButton(profile, 'md'));
+  }
+  if (staff && !isOwn) {
+    actions.push(canAct ? createAdminMenu(muted || banned) : createLockedAdminButton());
+  }
+  qs('[data-profile-action]').replaceChildren(...actions);
+}
+
+/** Nút "Quản trị" bị khoá với người cùng cấp hoặc cao hơn; rê chuột hoặc focus để xem lý do. */
+function createLockedAdminButton() {
+  return el('span', { className: 'staff-locked', tabindex: '0' },
+    el('button', { type: 'button', className: 'staff-trigger', disabled: true, 'aria-describedby': 'staff-locked-tip' }, modIcon('lock', 16), 'Quản trị'),
+    el('span', { id: 'staff-locked-tip', className: 'staff-locked__tip', role: 'tooltip' }, modIcon('lock', 14), 'Không thể tác động lên người cùng cấp hoặc cao hơn'));
+}
+
+/** Nút "Quản trị" và menu: tắt tiếng / gia hạn / gỡ, cấm / gỡ cấm, đổi vai trò (chỉ Admin). */
+function createAdminMenu(outline) {
+  const { profile, viewer } = state;
+  const muted = isMutedNow(profile.muted_until);
+  const banned = profile.status === 'banned';
+  const trigger = el('button', { type: 'button', className: 'staff-trigger' + (outline ? ' staff-trigger--outline' : '') }, modIcon('shield', 16), 'Quản trị');
+  const items = [];
+  if (!banned) {
+    items.push(muted
+      ? { icon: 'clock', label: 'Gia hạn tắt tiếng…', onSelect: () => muteProfile(true) }
+      : { icon: 'mute', label: 'Tắt tiếng…', onSelect: () => muteProfile(false) });
+    if (muted) {
+      items.push({ icon: 'mute', label: 'Gỡ tắt tiếng', onSelect: confirmUnmute });
+    }
+  }
+  items.push(banned
+    ? { icon: 'restore', label: 'Gỡ cấm', onSelect: confirmUnban }
+    : { icon: 'ban', label: 'Cấm tài khoản…', danger: true, onSelect: banProfile });
+  items.push('divider');
+  items.push(viewer.role === 'admin'
+    ? { icon: 'userCog', label: 'Đổi vai trò…', onSelect: changeRole }
+    : { icon: 'userCog', label: 'Đổi vai trò…', sub: 'Chỉ Quản trị viên', disabled: true });
+  return createMenu(trigger, { header: { icon: 'shield', text: 'Quản trị · ' + profile.username }, items });
+}
+
+/** Cập nhật hồ sơ từ phản hồi của API quản trị rồi vẽ lại thẻ (giữ nguyên danh sách theo dõi). */
+function applyProfileUpdate(updated) {
+  state.profile = { ...state.profile, ...updated };
+  renderProfile();
+}
+
+/** Mở hộp thoại tắt tiếng (hoặc gia hạn) và gửi muted_until. */
+function muteProfile(extend) {
+  openMuteDialog(state.profile, async until => applyProfileUpdate(await setUserMute(state.profile.id, until)), extend);
+}
+
+/** Xác nhận rồi gỡ tắt tiếng (gửi muted_until = null). */
+function confirmUnmute() {
+  openConfirmDialog({
+    icon: 'mute', tone: 'amber',
+    title: 'Gỡ tắt tiếng ' + state.profile.username + '?',
+    subtitle: 'Đang tắt tiếng đến ' + formatUntilFull(state.profile.muted_until),
+    body: [el('p', { className: 'mod-dialog__text' }, 'Thành viên sẽ đăng bài, bình luận và thả cảm xúc lại được ngay.')],
+    confirmLabel: 'Gỡ tắt tiếng', confirmIcon: 'check',
+    onConfirm: async () => applyProfileUpdate(await setUserMute(state.profile.id, null)),
+  });
+}
+
+/** Hộp thoại cấm tài khoản (phải gõ đúng tên người dùng). */
+function banProfile() {
+  openBanDialog(state.profile, async () => applyProfileUpdate(await setUserStatus(state.profile.id, 'banned')));
+}
+
+/** Xác nhận rồi gỡ cấm (status = active). */
+function confirmUnban() {
+  openConfirmDialog({
+    icon: 'restore',
+    title: 'Gỡ cấm ' + state.profile.username + '?',
+    subtitle: (MOD_ROLE_LABELS[state.profile.role] || 'Thành viên') + ' · @' + state.profile.username,
+    body: [el('p', { className: 'mod-dialog__text' }, 'Tài khoản đăng nhập và dùng lại mọi chức năng được ngay.')],
+    confirmLabel: 'Gỡ cấm', confirmIcon: 'check',
+    onConfirm: async () => applyProfileUpdate(await setUserStatus(state.profile.id, 'active')),
+  });
+}
+
+/** Hộp thoại đổi vai trò (chỉ Admin). */
+function changeRole() {
+  openRoleDialog(state.profile, async role => applyProfileUpdate(await setUserRole(state.profile.id, role)));
 }
 
 /** Cập nhật số người theo dõi / đang theo dõi ở thẻ hồ sơ và trên hai tab. */
@@ -341,7 +476,7 @@ async function initialize() {
   state.isOwn = !requestedId || requestedId === state.viewer?.id;
   try {
     state.profile = state.isOwn
-      ? { ...state.viewer, avatar_url: state.viewer.avatarUrl }
+      ? { ...state.viewer, avatar_url: state.viewer.avatarUrl, muted_until: state.viewer.mutedUntil }
       : await getUser(requestedId);
   } catch (error) {
     // Không tải được hồ sơ: ẩn hai thẻ đang chờ (thanh xám) và chỉ để lại thông báo lỗi.
