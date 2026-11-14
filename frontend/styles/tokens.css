@@ -198,6 +198,30 @@
   --post-petal-10-x: 886.9px; --post-petal-10-y: 1623.1px; --post-petal-10-rotate: -67deg;
 }
 
+/* Trang Diễn đàn (Figma Diễn đàn 1:1587): cột bảng tin 880px, ô viết bài và cánh hoa. */
+:root {
+  /* Cột bảng tin rộng 880px ở giữa trang, cách header 48px, khe giữa các khối 20px. */
+  --forum-width: 880px;
+  --forum-top: 48px;
+  --forum-bottom: 96px;
+  --forum-gap: 20px;
+  /* Ô viết bài: avatar 48px có bóng hồng nhẹ, ô nhập bo 24px. */
+  --forum-avatar-size: 48px;
+  --shadow-forum-avatar: 0 3px 4px rgba(194,69,79,.18);
+  --forum-pill-radius: 24px;
+  /* Mười cánh hoa: vị trí so với tâm trang (ngang) và đỉnh vùng nội dung (dọc), cùng góc xoay với trang đọc bài. */
+  --forum-petal-1-x: -700px;   --forum-petal-1-y: 163px;
+  --forum-petal-2-x: -774.8px; --forum-petal-2-y: 442.1px;
+  --forum-petal-3-x: -626.1px; --forum-petal-3-y: 804.8px;
+  --forum-petal-4-x: 646.3px;  --forum-petal-4-y: 205.4px;
+  --forum-petal-5-x: 745.7px;  --forum-petal-5-y: 543.4px;
+  --forum-petal-6-x: -736.8px; --forum-petal-6-y: 1165px;
+  --forum-petal-7-x: -651.3px; --forum-petal-7-y: 1424.7px;
+  --forum-petal-8-x: 686.5px;  --forum-petal-8-y: 976.4px;
+  --forum-petal-9-x: 626.1px;  --forum-petal-9-y: 1300.3px;
+  --forum-petal-10-x: 766.9px; --forum-petal-10-y: 1563.1px;
+}
+
 /* Khai báo các giá trị dùng chung để mọi trang có cùng thiết kế. */
 :root {
   /* Màu thương hiệu, nền, chữ, viền và trạng thái dùng cho nút, trường nhập và thông báo. */

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <!-- Tài nguyên tĩnh và phông chung giữ nhận diện đồng nhất với các trang đã làm. -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Diễn đàn · Etsubi</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/icons/etsubi-logo.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Sans+JP:wght@350;400;500;700&display=swap" />
+    <link rel="stylesheet" href="/styles/main.css" />
+    <link rel="stylesheet" href="/components/header/header.css" />
+    <link rel="stylesheet" href="/components/footer/footer.css" />
+    <link rel="stylesheet" href="/components/tag-chip/tag-chip.css" />
+    <link rel="stylesheet" href="/components/featured-card/featured-card.css" />
+    <link rel="stylesheet" href="/components/postcard/PostCard.css" />
+    <link rel="stylesheet" href="/styles/pages/forum.css" />
+    <script type="module" src="/pages/forum.js"></script>
+  </head>
+  <body class="page page--forum">
+    <!-- Header dùng chung: tab Diễn đàn đang chọn, ô tìm kiếm trong suốt như Figma. -->
+    <a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+    <header class="site-header" data-component="header" data-active="forum"></header>
+
+    <main id="main" class="forum">
+      <!-- Cánh hoa trang trí hai bên lề, ảnh tĩnh, trình đọc màn hình bỏ qua. -->
+      <div class="forum__petals" data-petals aria-hidden="true"></div>
+
+      <div class="forum__column">
+        <!-- Tiêu đề trang có vạch đỏ bên trái và dòng mô tả muted. -->
+        <header class="forum-heading">
+          <h1 class="t-display forum-heading__title">Diễn đàn</h1>
+          <p class="forum-heading__desc">Hỏi đáp, chia sẻ và kết nối cùng cộng đồng sinh viên Việt – Nhật</p>
+        </header>
+
+        <!-- Lỗi chung và thông báo tạm khoá viết (chỉ hiện khi có dữ liệu thật). -->
+        <div class="alert alert--error" role="alert" data-forum-error hidden></div>
+        <div class="alert alert--info" role="status" data-mute-notice hidden></div>
+
+        <!-- Bốn tab bảng tin; chọn tab mới tải danh sách tương ứng. -->
+        <div class="forum-tabs" role="tablist" aria-label="Chọn bảng tin" data-feed-tabs>
+          <button id="forum-tab-newest" class="forum-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="forum-feed" tabindex="0" data-feed-tab="newest">Mới nhất</button>
+          <button id="forum-tab-popular" class="forum-tab" type="button" role="tab" aria-selected="false" aria-controls="forum-feed" tabindex="-1" data-feed-tab="popular">Phổ biến</button>
+          <button id="forum-tab-following" class="forum-tab" type="button" role="tab" aria-selected="false" aria-controls="forum-feed" tabindex="-1" data-feed-tab="following">Đang theo dõi</button>
+          <button id="forum-tab-question" class="forum-tab" type="button" role="tab" aria-selected="false" aria-controls="forum-feed" tabindex="-1" data-feed-tab="question">Hỏi đáp</button>
+        </div>
+
+        <!-- Ô viết bài: chạm vào ô nhập để mở thêm tiêu đề và chủ đề; nút Đăng gửi bài thật lên API. -->
+        <form class="forum-compose" data-compose novalidate aria-labelledby="compose-label">
+          <h2 id="compose-label" class="u-visually-hidden">Viết bài mới</h2>
+          <div class="forum-compose__top">
+            <span class="forum-compose__avatar forum-compose__avatar--placeholder" aria-hidden="true" data-compose-avatar></span>
+            <label class="u-visually-hidden" for="compose-content">Nội dung bài viết</label>
+            <textarea id="compose-content" class="forum-compose__content" rows="1" maxlength="20000" placeholder="Bạn đang nghĩ gì?" data-compose-content></textarea>
+          </div>
+
+          <!-- Phần mở rộng: tiêu đề bắt buộc và chọn chủ đề (tag thật từ GET /tags). -->
+          <div class="forum-compose__extra" data-compose-extra hidden>
+            <div class="field">
+              <label class="field__label" for="compose-title">Tiêu đề <span class="field__required" aria-hidden="true">*</span></label>
+              <input id="compose-title" class="input forum-compose__title" type="text" maxlength="255" autocomplete="off" placeholder="Tóm tắt nội dung trong một câu" aria-describedby="compose-hint" data-compose-title />
+            </div>
+            <fieldset class="forum-compose__tags">
+              <legend class="field__label">Chủ đề</legend>
+              <div class="forum-compose__tag-list" data-compose-tags>
+                <span class="u-placeholder-bar u-placeholder-bar--short"></span>
+              </div>
+            </fieldset>
+          </div>
+
+          <hr class="forum-compose__divider" />
+
+          <!-- Hàng thao tác: Ảnh, Tệp, Thăm dò (chờ backend) bên trái; Huỷ và Đăng bên phải. -->
+          <div class="forum-compose__actions">
+            <button type="button" class="forum-compose__tool" data-compose-tool="image">
+              <img src="/assets/icons/compose-camera.svg" width="20" height="20" alt="" />Ảnh
+            </button>
+            <button type="button" class="forum-compose__tool" data-compose-tool="file">
+              <img src="/assets/icons/compose-attachment.svg" width="20" height="20" alt="" />Tệp
+            </button>
+            <button type="button" class="forum-compose__tool" data-compose-tool="poll">
+              <img src="/assets/icons/compose-poll.svg" width="20" height="20" alt="" />Thăm dò
+            </button>
+            <span class="forum-compose__spacer"></span>
+            <button type="button" class="btn btn--ghost forum-compose__cancel" data-compose-cancel hidden>Huỷ</button>
+            <button type="submit" class="btn btn--primary forum-compose__submit" data-compose-submit disabled>Đăng</button>
+          </div>
+          <p id="compose-hint" class="forum-compose__status" role="status" data-compose-status></p>
+        </form>
+
+        <!-- Bảng tin: thẻ PostCard dùng chung; vùng trạng thái đọc cho trình đọc màn hình. -->
+        <p class="u-visually-hidden" role="status" data-feed-status></p>
+        <div id="forum-feed" class="forum-feed" role="tabpanel" aria-labelledby="forum-tab-newest" tabindex="0" data-feed-list></div>
+        <div class="forum-more" data-feed-more hidden>
+          <button type="button" class="btn btn--secondary" data-feed-more-button>Tải thêm bài viết</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer đầy đủ dùng chung cho trang nội dung. -->
+    <footer class="site-footer" data-component="footer" data-variant="full"></footer>
+  </body>
+</html>
