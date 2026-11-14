@@ -208,7 +208,7 @@ Contract test (no dependencies): `node frontend/dev/tests/auth-foundation.mjs`.
     - On other people's profiles on desktop, the follow button sits at the right of the info row, because the desktop frame only shows your own profile.
     - Empty-state copy for other people's profiles ("<tên> chưa theo dõi ai") and for your own followers list was written by the team, because Figma only draws "Bạn chưa theo dõi ai".
   - Shared code touched, all additive: three new functions in `services/api/follows.js` and a profile token block in `tokens.css`.
-- **Mod/Admin (2026-11-14, partly checked)**, shared file board `1:2435`. Added `components/moderation/` (status badges, the "Chỉ Mod/Admin thấy" tag, the dashed staff box, dropdown menu, confirm dialogs for mute, ban and role changes) and `services/api/manage.js`. Used on two pages:
+- **Mod/Admin (2026-11-14, checked)**, shared file board `1:2435`. Added `components/moderation/` (status badges, the "Chỉ Mod/Admin thấy" tag, the dashed staff box, dropdown menu, confirm dialogs for mute, ban and role changes) and `services/api/manage.js`. Used on two pages:
   - **Hồ sơ:** "Quản trị" button and menu (Tắt tiếng / Gia hạn / Gỡ tắt tiếng, Cấm / Gỡ cấm, Đổi vai trò only for Admin). The button is locked with a reason for users of the same or a higher role. Muted badge and staff box, and a grey profile when banned.
   - **Đọc bài:**
     - Staff post menu: hide or show, lock comments, delete and restore.
@@ -216,8 +216,17 @@ Contract test (no dependencies): `node frontend/dev/tests/auth-foundation.mjs`.
     - Staff comment menu: hide or show, delete and restore, mute the writer.
     - Notices: amber notice for muted users (input and like disabled), grey notice and "Đã khoá bình luận" badge for locked comments.
   - **Checked in the browser** with test accounts `admin@demo.etsubi.vn` and `mod@demo.etsubi.vn` (same password as the seed). Their roles were set in the local DB with SQL. Every flow above was run against the real API. A public `GET /posts/{id}` returns 404 after a delete and 200 after a restore.
-  - **Not done yet:** pixel measurement against Figma, mobile 375 check, and screenshots of the dialogs and menus.
-  - **Intentional additions:** unmute and unban also go through a confirm dialog, because Figma says every admin action is confirmed. The post edit form is not designed in Figma.
+  - **Measured against Figma (`1:2435`):** line-heights in the menu and dialogs were set to the Figma values. The ban name input is 46px tall and the role cards have an 18px gap.
+    - Menu: 272 wide, header 27, items 36 and 52 (with a sub line).
+    - Mute dialog: 400 tall (Figma 401). The head, chips, "until" line and footer sit at the Figma offsets.
+    - Chip and until line: 36. Cancel and confirm: 40. Badge: 25. Staff tag: 20. Staff buttons and the "Quản trị" trigger: 36.
+  - **Mobile 375×812:** no horizontal scroll on the profile or the reading page. The dialogs fit at 337 wide. The menu is anchored to the right edge of its button. If that would push it off screen, JS shifts it sideways by exactly the overflow (8px margin) through `--mod-menu-shift`. This matters for the comment ⋯ button, which sits mid-line on phones.
+  - **Intentional differences:**
+    - Unmute and unban also go through a confirm dialog, because Figma says every admin action is confirmed.
+    - The post edit form is not designed in Figma.
+    - When a dialog opens, focus goes to its first field: the name input when banning, the 24h chip when muting, the current role when changing roles. With no field, it goes to Cancel. It never goes to ×, so Enter cannot close the dialog by accident.
+    - The "Điều hành viên" role description wraps to two lines (card 93px instead of 77). Figma keeps it on one line and lets it overflow the card.
+    - On phones the dialog buttons wrap to two lines (56px).
 - **Docker on Windows without editing `backend/`:** besides converting `entrypoint.sh` to LF, you can mount an LF copy over it with an extra compose file that has `services.backend.volumes: ["<path>/entrypoint.sh:/entrypoint.sh:ro"]` and run `docker compose -f docker-compose.yml -f <that file> --profile full up -d --build postgres backend`.
 
 ## 5. Yêu cầu cho backend (requests for the back-end dev)

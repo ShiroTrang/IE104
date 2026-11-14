@@ -219,6 +219,18 @@ export function createMenu(trigger, { header, items }) {
     closeOpenMenu();
     if (shouldOpen) {
       panel.hidden = false;
+      // Menu neo mép phải nút mở; trên điện thoại nút ⋯ của bình luận nằm giữa dòng
+      // nên menu 272px có thể tràn mép trái. Đo rồi dịch ngang đúng phần tràn, chừa 8px.
+      panel.style.setProperty('--mod-menu-shift', '0px');
+      const rect = panel.getBoundingClientRect();
+      const edge = 8;
+      let shift = 0;
+      if (rect.left < edge) {
+        shift = edge - rect.left;
+      } else if (rect.right > window.innerWidth - edge) {
+        shift = window.innerWidth - edge - rect.right;
+      }
+      panel.style.setProperty('--mod-menu-shift', shift + 'px');
       trigger.setAttribute('aria-expanded', 'true');
       openMenu = { panel, trigger, wrapper };
       panel.querySelector('.mod-menu__item:not(:disabled)')?.focus();
@@ -324,6 +336,8 @@ export function openConfirmDialog({ icon, tone = 'red', title, subtitle, body = 
     document.body.append(dialog);
     sync();
     dialog.showModal();
+    // Đưa focus vào ô cần thao tác (data-autofocus) hoặc nút Huỷ, thay vì nút × đầu tiên; thao tác nặng không bị xác nhận nhầm bằng Enter.
+    (form.querySelector('[data-autofocus]') || cancel).focus();
   });
 }
 
@@ -364,7 +378,7 @@ export function openMuteDialog(user, onConfirm, extend = false) {
   }
 
   for (const [label, value] of [...options, ['Tuỳ chỉnh…', 'custom']]) {
-    const chip = el('button', { type: 'button', role: 'radio', className: 'mod-dialog__chip', 'data-value': String(value) }, label);
+    const chip = el('button', { type: 'button', role: 'radio', className: 'mod-dialog__chip', 'data-value': String(value), 'data-autofocus': value === 24 ? '' : null }, label);
     // Bấm chip: chọn thời hạn có sẵn, hoặc mở ô chọn ngày giờ tuỳ chỉnh.
     chip.addEventListener('click', () => {
       if (value === 'custom') {
@@ -407,7 +421,7 @@ export function openMuteDialog(user, onConfirm, extend = false) {
  * @param {Function} onConfirm Gọi API cấm.
  */
 export function openBanDialog(user, onConfirm) {
-  const input = el('input', { type: 'text', className: 'input mod-dialog__input', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Nhập tên người dùng để xác nhận' });
+  const input = el('input', { type: 'text', className: 'input mod-dialog__input', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Nhập tên người dùng để xác nhận', 'data-autofocus': '' });
   const consequences = [
     'Không truy cập được các chức năng cần đăng nhập.',
     'Mọi thao tác đăng bài, bình luận, theo dõi đều bị chặn.',
@@ -441,7 +455,7 @@ export function openRoleDialog(user, onConfirm) {
   ];
   const fieldset = el('fieldset', { className: 'mod-dialog__roles' }, el('legend', { className: 'u-visually-hidden' }, 'Vai trò mới'),
     choices.map(([value, label, desc]) => el('label', { className: 'radio-card' + (value === 'admin' ? ' is-disabled' : '') },
-      el('input', { type: 'radio', name: 'role', value, className: 'radio-card__input', checked: user.role === value, disabled: value === 'admin' }),
+      el('input', { type: 'radio', name: 'role', value, className: 'radio-card__input', checked: user.role === value, disabled: value === 'admin', 'data-autofocus': user.role === value ? '' : null }),
       el('span', { className: 'radio-card__circle', 'aria-hidden': 'true' }),
       el('span', { className: 'radio-card__text' }, el('span', { className: 'radio-card__title' }, label), el('span', { className: 'radio-card__desc' }, desc)))));
   const selected = () => fieldset.querySelector('input:checked')?.value;
