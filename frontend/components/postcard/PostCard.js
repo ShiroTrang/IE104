@@ -11,6 +11,9 @@ import { createTagChip } from '/components/tag-chip/tag-chip.js';
 import { backendSupports } from '/services/api/capabilities.js';
 import { getAuthorLabel, getAuthorHandle, getAuthorDisplayName } from '/services/api/posts.js';
 import { t } from '/utils/i18n.js';
+import { createMenu, createMoreButton } from '/components/moderation/moderation.js';
+import { openReportDialog } from '/components/report-dialog/report-dialog.js';
+import { getCachedUser } from '/utils/auth.js';
 
 /** Tạo văn bản có đánh dấu khớp và gắn ngôn ngữ Nhật cho cả chữ trong mark. */
 function markedText(text, query, variant) {
@@ -219,6 +222,33 @@ function createBookmarkButton(postId, initialState, onBookmark) {
   return button;
 }
 
+/**
+ * Nút ⋯ ở góc thẻ với mục "Báo cáo bài viết…", để báo cáo ngay từ bảng tin mà không cần mở bài.
+ * Chỉ hiện khi đã đăng nhập và bài không phải của chính mình (máy chủ cũng chặn tự báo cáo).
+ */
+function createFeedMenu(post, author) {
+  const viewer = getCachedUser();
+  const authorId = author?.id ?? post.author_id;
+  if (!viewer || (authorId && viewer.id === authorId)) {
+    return null;
+  }
+  const name = getAuthorLabel(author);
+  const menu = createMenu(createMoreButton(t('Tuỳ chọn bài viết')), {
+    header: null,
+    items: [{
+      icon: 'flag',
+      label: t('Báo cáo bài viết…'),
+      onSelect: () => openReportDialog({
+        targetType: 'post',
+        targetId: post.id,
+        summary: '“' + richToPlainText(post.title) + '”' + (name ? ' · ' + name : ''),
+      }),
+    }],
+  });
+  menu.classList.add('postcard-feed__menu');
+  return menu;
+}
+
 /** Dựng thẻ dùng chung cho Trang chủ, Diễn đàn và Hồ sơ từ dữ liệu bài viết thật. */
 export function createFeedPostCard(post, {
   author, tags = [], stats = {}, viewerLanguage = 'vi', bookmarked = null, onBookmark,
@@ -243,7 +273,7 @@ export function createFeedPostCard(post, {
   const avatar = createFeedAvatar(author);
   const userRow = el('div', { className: 'postcard-feed__user' }, authorHref
     ? el('a', { className: 'postcard-feed__avatar-link', href: authorHref, 'aria-label': name || t('Hồ sơ') }, avatar)
-    : avatar, identity);
+    : avatar, identity, createFeedMenu(post, author));
   const title = el('h3', { className: 'postcard-feed__title' },
     el('a', { href: postHref }, wrapJapanese(richToPlainText(post.title))));
   const preview = buildFeedPreview(post.content);

@@ -224,9 +224,16 @@
   display: flex;
   flex: 1;
   flex-direction: column;
+  align-items: flex-start;
   gap: var(--space-1);
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* Nút ⋯ (Báo cáo bài viết) nằm sát mép phải hàng tác giả, căn theo đỉnh avatar. */
+.postcard-feed__menu {
+  flex-shrink: 0;
+  align-self: flex-start;
 }
 
 /* Tên người viết đậm hơn handle và thời gian ở dòng dưới. */

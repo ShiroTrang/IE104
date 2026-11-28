@@ -641,7 +641,7 @@
   box-shadow: none;
 }
 
-.post-comment-reply .rich-editor__tools,
+/* Ô trả lời giữ thanh công cụ như ô bình luận chính; chỉ ẩn bộ đếm và dòng lỗi rỗng cho gọn. */
 .post-comment-reply .rich-editor__footer,
 .post-comment-reply .field__hint:empty { display: none; }
 

@@ -22,7 +22,7 @@ export function createTagChip({ name, state = 'default', count, href, onClick, o
   });
   // Dấu chọn bổ sung hình dạng để chip đang bật không chỉ khác nhau bằng màu nền.
   if (state === 'selected') {
-    chip.append(el('img', { src: '/assets/icons/chip-check.svg', alt: '', width: 14, height: 14 }));
+    chip.append(el('img', { src: '/assets/icons/chip-check-red.svg', alt: '', width: 14, height: 14 }));
   }
   chip.append(el('span', { className: 'tag-chip__label' },
     el('span', { className: 'tag-chip__hash' }, '#'), wrapJapanese(name)

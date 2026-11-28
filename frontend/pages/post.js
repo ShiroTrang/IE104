@@ -67,6 +67,8 @@ let activeCommentEdit = null;
 // Khung trả lời độc lập với ô bình luận gốc và giữ lại khi danh sách vẽ lại.
 let activeReply = null;
 let replyDiscard = null;
+// Bộ công cụ chung cho ô bình luận, ô sửa bình luận và ô trả lời, để ba nơi giống nhau.
+const COMMENT_TOOLS = ['emoji', '|', 'bold', 'italic', 'underline', 'strikeThrough', '|', 'link', 'image', 'pin', '|', 'removeFormat'];
 let commentPlaceViews = [];
 
 /* ===== Tiện ích hiển thị ===== */
@@ -697,7 +699,7 @@ function startCommentEdit(comment) {
   const save = el('button', { type: 'submit', className: 'btn btn--primary', disabled: true }, t('Lưu thay đổi'));
   const cancel = el('button', { type: 'button', className: 'btn btn--ghost' }, t('Huỷ'));
   const editor = createRichEditor({ label: t('Sửa bình luận'), allowLinks: true, counter: 'comment',
-    tools: ['emoji', '|', 'bold', 'italic', 'underline', 'strikeThrough', '|', 'link', 'image', 'pin', '|', 'removeFormat'],
+    tools: COMMENT_TOOLS,
     onChange: sync, onTool: tool });
   const placeBox = el('div', { className: 'rich-media' });
   editor.media.append(placeBox);
@@ -902,7 +904,11 @@ async function startReply(comment) {
   const status = el('p', { id: 'reply-error-' + comment.id, className: 'field__hint field__hint--error', role: 'alert' });
   const cancel = el('button', { type: 'button', className: 'btn btn--secondary btn--sm' }, t('Huỷ'));
   const send = el('button', { type: 'submit', className: 'btn btn--primary btn--sm', disabled: true }, t('Gửi trả lời'));
-  const editor = createRichEditor({ label, allowLinks: true, counter: 'comment', tools: [], onChange: sync });
+  const editor = createRichEditor({ label, allowLinks: true, counter: 'comment', tools: COMMENT_TOOLS, onChange: sync, onTool: replyTool });
+  // Địa điểm gắn kèm nằm dưới chữ như ô bình luận chính, gửi cùng toạ độ khi đăng.
+  let place = null;
+  const placeBox = el('div', { className: 'rich-media' });
+  editor.media.append(placeBox);
   editor.area.setAttribute('aria-labelledby', labelId);
   editor.area.setAttribute('aria-describedby', status.id);
   const form = el('form', { id: 'reply-form-' + comment.id, className: 'post-comment-reply', novalidate: true },
@@ -910,6 +916,24 @@ async function startReply(comment) {
     editor.root, status, el('div', { className: 'post-comment-reply__actions' }, cancel, send));
   const session = { id: comment.id, editor, form, initialHtml: '', sending: false };
   activeReply = session;
+
+  /** Hiện chip địa điểm đang gắn và đồng bộ trạng thái nút ghim. */
+  function renderReplyPlace() {
+    placeBox.replaceChildren(...(place ? [createPlaceChip(place, () => { place = null; renderReplyPlace(); })] : []));
+    editor.setToolPressed('pin', Boolean(place));
+  }
+
+  /** Nút ảnh chèn ảnh vào nội dung; nút ghim chọn địa điểm, giống ô bình luận chính. */
+  async function replyTool(tool) {
+    if (session.sending) return;
+    if (tool === 'image') {
+      const image = await openImageDialog();
+      if (image) editor.insertImage(image);
+    } else if (tool === 'pin') {
+      const picked = await pickPlace(place);
+      if (picked) { place = picked; renderReplyPlace(); }
+    }
+  }
 
   /** Chỉ có handle điền sẵn thì chưa gửi được; lỗi mất khi người dùng tiếp tục sửa. */
   function sync() {
@@ -937,7 +961,8 @@ async function startReply(comment) {
     try {
       if (!await ensureSignedIn()) return;
       const reply = await createComment(state.post.id, content, comment.id,
-        { postAuthorId: state.post.author_id, parentAuthorId: comment.user_id });
+        { postAuthorId: state.post.author_id, parentAuthorId: comment.user_id,
+          latitude: place?.latitude, longitude: place?.longitude });
       addComment(reply);
       closeReply(session);
       renderComments();
@@ -1220,7 +1245,7 @@ const commentInput = qs('[data-comment-input]');
 const commentSubmit = qs('[data-comment-submit]');
 const expandedComment = qs('[data-comment-expanded]');
 const commentEditor = createRichEditor({ label: t('Viết bình luận'), placeholder: t('Chia sẻ cảm nhận của bạn…'), allowLinks: true, counter: 'comment',
-  tools: ['emoji', '|', 'bold', 'italic', 'underline', 'strikeThrough', '|', 'link', 'image', 'pin', '|', 'removeFormat'],
+  tools: COMMENT_TOOLS,
   onChange: commentContentChanged, onTool: handleCommentTool });
 commentEditor.area.setAttribute('aria-describedby', 'comment-hint');
 const commentPlaceBox = el('div', { className: 'rich-media' });

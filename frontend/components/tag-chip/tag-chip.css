@@ -34,7 +34,7 @@
   font-weight: 400;
 }
 
-/* Chip đã chọn có dấu kiểm đỏ (chip-check.svg) trên nền đỏ nhạt để thể hiện bộ lọc đang có hiệu lực. */
+/* Chip đã chọn có dấu kiểm đỏ (chip-check-red.svg) trên nền đỏ nhạt để thể hiện bộ lọc đang có hiệu lực. */
 .tag-chip--selected {
   padding-left: var(--space-2);
   border-color: var(--color-red-soft-border);
