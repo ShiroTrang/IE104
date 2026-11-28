@@ -9,19 +9,29 @@ use crate::{
         post::{error::PostError, repository::PostRepository},
         user::repository::UserRepository,
     },
-    infrastructure::database::models::entities::Post,
+    infrastructure::{
+        database::models::entities::Post,
+        helper::rate_limit::{RateLimiter, RateRule, retry_after_secs},
+    },
 };
 
 pub struct PostService {
     post_repo: Arc<dyn PostRepository>,
     user_repo: Arc<dyn UserRepository>,
+    /// Chống spam: khoảng cách tối thiểu và số bài tối đa mỗi giờ của một người.
+    limiter: RateLimiter,
 }
 
 impl PostService {
-    pub fn new(post_repo: Arc<dyn PostRepository>, user_repo: Arc<dyn UserRepository>) -> Self {
+    pub fn new(
+        post_repo: Arc<dyn PostRepository>,
+        user_repo: Arc<dyn UserRepository>,
+        rate_rule: RateRule,
+    ) -> Self {
         Self {
             post_repo,
             user_repo,
+            limiter: RateLimiter::new(rate_rule),
         }
     }
 
@@ -43,6 +53,12 @@ impl PostService {
         if content.len() > 100_000 {
             return Err(PostError::ContentTooLong);
         }
+        // Tính lượt sau khi dữ liệu hợp lệ để lỗi nhập liệu không làm người dùng phải chờ.
+        self.limiter
+            .acquire(author_id)
+            .map_err(|wait| PostError::RateLimited {
+                retry_after: retry_after_secs(wait),
+            })?;
 
         let detected_language = match detect_language(content) {
             Lang::Vie => "vi",

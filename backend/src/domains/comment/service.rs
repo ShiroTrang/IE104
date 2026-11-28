@@ -10,13 +10,18 @@ use crate::{
         post::repository::PostRepository,
         user::repository::UserRepository,
     },
-    infrastructure::database::models::entities::Comment,
+    infrastructure::{
+        database::models::entities::Comment,
+        helper::rate_limit::{RateLimiter, RateRule, retry_after_secs},
+    },
 };
 
 pub struct CommentService {
     comment_repo: Arc<dyn CommentRepository>,
     post_repo: Arc<dyn PostRepository>,
     user_repo: Arc<dyn UserRepository>,
+    /// Chống spam: khoảng cách tối thiểu và số bình luận tối đa mỗi giờ của một người.
+    limiter: RateLimiter,
 }
 
 impl CommentService {
@@ -24,11 +29,13 @@ impl CommentService {
         comment_repo: Arc<dyn CommentRepository>,
         post_repo: Arc<dyn PostRepository>,
         user_repo: Arc<dyn UserRepository>,
+        rate_rule: RateRule,
     ) -> Self {
         Self {
             comment_repo,
             post_repo,
             user_repo,
+            limiter: RateLimiter::new(rate_rule),
         }
     }
 
@@ -98,6 +105,13 @@ impl CommentService {
                 return Err(CommentError::ParentUnavailable);
             }
         }
+
+        // Tính lượt sau mọi bước kiểm tra để lỗi nhập liệu hay bài bị khoá không làm người dùng phải chờ.
+        self.limiter
+            .acquire(requester.id)
+            .map_err(|wait| CommentError::RateLimited {
+                retry_after: retry_after_secs(wait),
+            })?;
 
         let detected_language = match detect_language(content) {
             Lang::Vie => "vi",

@@ -5,6 +5,7 @@ pub mod follow;
 pub mod notification;
 pub mod notification_fanout;
 pub mod post;
+pub mod rate_limit;
 pub mod reaction;
 pub mod report;
 pub mod tag;

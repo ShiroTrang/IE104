@@ -28,7 +28,12 @@ use crate::{
 };
 
 pub fn run() -> Result<web::Data<AppState>, Box<dyn std::error::Error>> {
-    let config = Arc::new(AppConfig::from_env());
+    run_with(AppConfig::from_env())
+}
+
+/// Dựng toàn bộ service từ một cấu hình có sẵn (test tích hợp dùng để tắt giới hạn tần suất).
+pub fn run_with(config: AppConfig) -> Result<web::Data<AppState>, Box<dyn std::error::Error>> {
+    let config = Arc::new(config);
     let database = &config.database;
     let server = &config.server;
     let pool = pool::init(&database.url);
@@ -56,11 +61,16 @@ pub fn run() -> Result<web::Data<AppState>, Box<dyn std::error::Error>> {
         mailer.clone(),
         config.mail.app_base_url.clone(),
     ));
-    let post_service = Arc::new(PostService::new(post_repo.clone(), user_repo.clone()));
+    let post_service = Arc::new(PostService::new(
+        post_repo.clone(),
+        user_repo.clone(),
+        config.rate_limit.post,
+    ));
     let comment_service = Arc::new(CommentService::new(
         comment_repo.clone(),
         post_repo.clone(),
         user_repo.clone(),
+        config.rate_limit.comment,
     ));
     let translation_client = build_client(&config.translation)?;
     let translation_service = Arc::new(TranslationService::new(

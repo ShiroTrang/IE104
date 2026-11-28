@@ -36,6 +36,9 @@ pub enum PostError {
     #[error("Search query is too long (max 200 characters)")]
     QueryTooLong,
 
+    #[error("You are posting too fast, try again in {retry_after} seconds")]
+    RateLimited { retry_after: u64 },
+
     #[error(transparent)]
     Internal(#[from] anyhow::Error),
 }
@@ -54,11 +57,23 @@ impl ResponseError for PostError {
 
             PostError::Forbidden | PostError::HiddenCannotEdit => StatusCode::FORBIDDEN,
 
+            // 409 thay vì 429: client.js tự gửi lại mọi lỗi 429, không hợp với lỗi chống spam.
+            PostError::RateLimited { .. } => StatusCode::CONFLICT,
+
             PostError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
     fn error_response(&self) -> HttpResponse {
+        if let PostError::RateLimited { retry_after } = self {
+            return HttpResponse::build(self.status_code())
+                .insert_header(("Retry-After", retry_after.to_string()))
+                .json(json!({
+                    "error": self.to_string(),
+                    "code": "rate_limited",
+                    "retry_after": retry_after,
+                }));
+        }
         HttpResponse::build(self.status_code()).json(json!({
             "error": self.to_string(),
         }))

@@ -1,5 +1,6 @@
 use actix_web::{App, HttpServer};
 use backend::bootstrap;
+use backend::bootstrap::config::{AppConfig, rate_limit::RateLimitConfig};
 use reqwest::blocking::Client;
 use serde_json::{Value, json};
 use uuid::Uuid;
@@ -11,8 +12,20 @@ pub struct TestServer {
 }
 
 impl TestServer {
+    /// Server test không giới hạn tần suất đăng bài/bình luận, để test tạo nhiều bài liên tiếp.
     pub fn start() -> Self {
-        let state = bootstrap::run().expect("bootstrap failed");
+        let mut config = AppConfig::from_env();
+        config.rate_limit = RateLimitConfig::off();
+        Self::start_with(config)
+    }
+
+    /// Server test với giới hạn tần suất như production (đọc từ biến môi trường hoặc mặc định).
+    pub fn start_with_rate_limits() -> Self {
+        Self::start_with(AppConfig::from_env())
+    }
+
+    fn start_with(config: AppConfig) -> Self {
+        let state = bootstrap::run_with(config).expect("bootstrap failed");
         let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
         let port = listener.local_addr().unwrap().port();
 

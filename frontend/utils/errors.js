@@ -32,6 +32,14 @@ export function toVietnameseMessage(error) {
   if (error?.data?.code === 'invalid_link') {
     return t('Liên kết không hợp lệ hoặc đã hết hạn.');
   }
+  // Chống spam khi đăng bài, bình luận: máy chủ trả số giây phải chờ trong data.retry_after.
+  if (error?.data?.code === 'rate_limited') {
+    const seconds = Number(error.data.retry_after) || 0;
+    if (seconds > 90) {
+      return t('Bạn đăng quá nhiều trong một giờ, vui lòng thử lại sau {minutes} phút.', { minutes: Math.ceil(seconds / 60) });
+    }
+    return t('Bạn đăng hơi nhanh, vui lòng chờ {seconds} giây rồi gửi lại.', { seconds: Math.max(1, seconds) });
+  }
   // Lỗi của Báo cáo vi phạm (POST /reports): máy chủ trả mã ổn định trong data.code.
   const reportMessages = {
     invalid_target: t('Không báo cáo được loại nội dung này.'),

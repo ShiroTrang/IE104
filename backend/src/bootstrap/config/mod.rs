@@ -1,12 +1,14 @@
 pub mod database;
 pub mod mail;
 pub mod oauth;
+pub mod rate_limit;
 pub mod server;
 pub mod translation;
 
 use database::DatabaseConfig;
 use mail::MailConfig;
 use oauth::OAuthConfig;
+use rate_limit::RateLimitConfig;
 use server::ServerConfig;
 use translation::TranslationConfig;
 
@@ -17,6 +19,7 @@ pub struct AppConfig {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub mail: MailConfig,
+    pub rate_limit: RateLimitConfig,
 }
 
 impl AppConfig {
@@ -35,6 +38,7 @@ impl AppConfig {
             server: ServerConfig::from_env(),
             database: DatabaseConfig::from_env(),
             mail: MailConfig::from_env(),
+            rate_limit: RateLimitConfig::from_env(),
         }
     }
 }

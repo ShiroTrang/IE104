@@ -362,6 +362,8 @@ export default {
   'Mô tả tối đa 1000 ký tự.': { ja: '詳細は1000文字以内です。', en: 'Details can be at most 1000 characters.' },
   'Nội dung này không còn tồn tại.': { ja: 'この内容はもう存在しません。', en: 'This content no longer exists.' },
   'Bạn không thể báo cáo chính mình.': { ja: '自分自身は報告できません。', en: 'You cannot report yourself.' },
+  'Bạn đăng quá nhiều trong một giờ, vui lòng thử lại sau {minutes} phút.': { ja: '1時間の投稿数が上限に達しました。{minutes}分後にもう一度お試しください。', en: 'You have posted too much this hour, please try again in {minutes} minutes.' },
+  'Bạn đăng hơi nhanh, vui lòng chờ {seconds} giây rồi gửi lại.': { ja: '投稿が速すぎます。{seconds}秒待ってからもう一度送信してください。', en: 'You are posting a bit fast, please wait {seconds} seconds and try again.' },
   'Bạn vừa báo cáo nội dung này, vui lòng chờ 10 phút.': { ja: 'この内容はすでに報告済みです。10分お待ちください。', en: 'You just reported this, please wait 10 minutes.' },
   'Bạn đã gửi quá nhiều báo cáo trong một giờ, vui lòng thử lại sau.': { ja: '1時間内の報告が多すぎます。しばらくしてからお試しください。', en: 'You sent too many reports in the last hour, please try again later.' },
 };
