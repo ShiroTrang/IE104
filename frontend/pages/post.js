@@ -911,8 +911,9 @@ async function startReply(comment) {
   editor.media.append(placeBox);
   editor.area.setAttribute('aria-labelledby', labelId);
   editor.area.setAttribute('aria-describedby', status.id);
+  // Nhãn nằm trong editor, cùng hàng với thanh công cụ; ô nhập ở dòng dưới.
+  editor.root.prepend(el('p', { className: 'post-comment-reply__label', id: labelId }, wrapJapanese(label)));
   const form = el('form', { id: 'reply-form-' + comment.id, className: 'post-comment-reply', novalidate: true },
-    el('p', { className: 'post-comment-reply__label', id: labelId }, wrapJapanese(label)),
     editor.root, status, el('div', { className: 'post-comment-reply__actions' }, cancel, send));
   const session = { id: comment.id, editor, form, initialHtml: '', sending: false };
   activeReply = session;

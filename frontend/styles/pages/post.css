@@ -651,6 +651,32 @@
   padding: 0;
 }
 
+/* Nhãn "Trả lời …" và thanh công cụ chung một hàng; hẹp quá thì thanh công cụ xuống dòng. */
+.post-comment-reply .rich-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--space-3);
+}
+
+.post-comment-reply .post-comment-reply__label { flex: 1 1 auto; }
+
+.post-comment-reply .rich-editor__tools { flex: 0 1 auto; }
+
+/* Thanh công cụ cạnh nhãn bỏ nền và đường kẻ để không thành một dải riêng. */
+.post-comment-reply .rich-editor__toolbar {
+  min-height: 0;
+  padding: 0;
+  border-bottom: 0;
+  background: var(--color-transparent);
+}
+
+/* Ô nhập chiếm trọn dòng dưới, cách hàng công cụ một khoảng. */
+.post-comment-reply .rich-editor__body {
+  flex: 1 1 100%;
+  padding-top: var(--space-2);
+}
+
 /* Chữ trong editor trả lời cùng cỡ dòng mẫu, nội dung dài tự ngắt trên điện thoại. */
 .post-comment-reply .rich-editor__area {
   font-size: 15px;
